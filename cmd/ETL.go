@@ -17,6 +17,7 @@ package cmd
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -37,10 +38,31 @@ to quickly create a Cobra application.`,
 		fmt.Println(cmd.PersistentFlags().GetString("foo"))
 		fmt.Println(cmd.Flags().GetBool("toggle"))
 
-		
+
 
 
 	},
+}
+
+func run() {
+	var interval int32
+	rerun := true
+	for rerun {
+		requestWU()
+		postInflux()
+		rerun = interval > 0
+		if rerun {
+			time.Sleep(time.Duration(interval) * time.Second)
+		}
+	}
+}
+
+func requestWU() {
+
+}
+
+func postInflux() {
+
 }
 
 func init() {
