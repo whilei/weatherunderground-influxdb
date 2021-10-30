@@ -33,6 +33,11 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("ETL called")
+		// fmt.Println(cmd.ParseFlags(args)) // This is unnecessary, but harmless.
+		fmt.Println(cmd.PersistentFlags().GetString("foo"))
+		fmt.Println(cmd.Flags().GetBool("toggle"))
+
+
 	},
 }
 
@@ -43,9 +48,9 @@ func init() {
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// ETLCmd.PersistentFlags().String("foo", "", "A help for foo")
+	ETLCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// ETLCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	ETLCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
