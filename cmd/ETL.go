@@ -37,6 +37,8 @@ to quickly create a Cobra application.`,
 		fmt.Println(cmd.PersistentFlags().GetString("foo"))
 		fmt.Println(cmd.Flags().GetBool("toggle"))
 
+		
+
 
 	},
 }
