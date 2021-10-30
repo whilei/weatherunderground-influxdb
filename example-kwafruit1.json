@@ -1,1 +1,33 @@
-{"observations":[{"stationID":"KWAFRUIT1","obsTimeUtc":"2021-10-19T16:20:30Z","obsTimeLocal":"2021-10-19 09:20:30","neighborhood":"Fruitland","softwareType":null,"country":"US","solarRadiation":null,"lon":-118.367,"realtimeFrequency":null,"epoch":1634660430,"lat":48.029,"uv":null,"winddir":30,"humidity":84,"qcStatus":-1,"metric":{"temp":6,"heatIndex":6,"dewpt":4,"windChill":6,"windSpeed":3,"windGust":6,"pressure":1017.95,"precipRate":0.00,"precipTotal":0.00,"elev":412}}]}
+{
+  "observations": [
+    {
+      "stationID": "KWAFRUIT1", 
+      "obsTimeUtc": "2021-10-19T16:20:30Z", 
+      "obsTimeLocal": "2021-10-19 09:20:30", 
+      "neighborhood": "Fruitland", 
+      "softwareType": null, 
+      "country": "US", 
+      "solarRadiation": null, 
+      "lon": -118.367, 
+      "realtimeFrequency": null, 
+      "epoch": 1634660430, 
+      "lat": 48.029, 
+      "uv": null, 
+      "winddir": 30, 
+      "humidity": 84, 
+      "qcStatus": -1, 
+      "metric": {
+        "temp": 6, 
+        "heatIndex": 6, 
+        "dewpt": 4, 
+        "windChill": 6, 
+        "windSpeed": 3, 
+        "windGust": 6, 
+        "pressure": 1017.95, 
+        "precipRate": 0.00, 
+        "precipTotal": 0.00, 
+        "elev": 412
+      }
+    }
+  ]
+}
