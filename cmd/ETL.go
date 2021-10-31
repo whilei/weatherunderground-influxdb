@@ -27,11 +27,12 @@ import (
 	log "github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	metricsI "github.com/ethereum/go-ethereum/metrics/influxdb"
+	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	influxdb2_api "github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/spf13/cobra"
 )
 
 var (
-	myRegistry = metrics.NewRegistry()
 )
 
 // ETLCmd represents the ETL command
@@ -62,6 +63,7 @@ to quickly create a Cobra application.`,
 		log.Debug("flags", "dne", dneVal, "err", err)
 
 		log.Info("test")
+
 		// ---------------------------------- EO SETUP/DEBUG
 
 		// InfluxDB credentials
@@ -77,24 +79,21 @@ to quickly create a Cobra application.`,
 		// Application config
 		appIntervalVal, _ := cmd.PersistentFlags().GetDuration("etl.interval")
 
-		// This is a strange pattern. /metrics, I mean.
-		// I'm using it as a library, but I don't think it's exactly intended to be one.
-		metricsI.InfluxDBV2WithTags(
-			myRegistry,
-			10*time.Second,
-			influxEndpointVal,
-			influxTokenVal,
-			influxBucketVal,
-			influxOrgVal,
-			"wu.",
-			nil,
-			)
+
+		c := influxdb2.NewClient(influxEndpointVal, influxTokenVal)
+		api := c.WriteAPIBlocking(influxOrgVal, influxBucketVal)
 
 		manWU := &managerWU{apiKey: wuAPIKeyVal}
 
+		manIF := &managerInflux{
+			ifClient: api,
+			namespace: "wu.",
+
+		}
+
 		rc := &runConfig{
 			manWU:         manWU,
-			managerInflux: nil,
+			managerInflux: manIF,
 			stations:      wuStationsVal,
 			interval:      appIntervalVal,
 		}
@@ -117,6 +116,8 @@ type managerWU struct {
 }
 
 type managerInflux struct {
+ifClient influxdb2_api.WriteAPIBlocking
+namespace string
 }
 
 type weatherUndergroundObservation struct {
@@ -145,7 +146,7 @@ type weatherUndergroundObservation struct {
 	Imperial /* ??? */ weatherUndergroundObservationReport `json:"imperial"`
 }
 
-func (w *weatherUndergroundObservation) MustParse() {
+func (w *weatherUndergroundObservation) MustInflate() {
 	var err error
 	w.ObsTimeUTCTime, err = time.Parse(time.RFC3339, w.ObsTimeUtc)
 	if err != nil {
@@ -188,7 +189,7 @@ func run(rc *runConfig) {
 				break stationsLoop
 			}
 			for _, obs := range res.Observations {
-				obs.MustParse()
+				obs.MustInflate()
 				err := rc.managerInflux.recordInfluxObservation(obs)
 				if err != nil {
 					log.Error("Post InfluxDB", "error", err)
@@ -253,7 +254,22 @@ var gaugeMetricPressure = metrics.NewGaugeFloat64()
 var gaugeMetricPrecipRate = metrics.NewGaugeFloat64()
 var gaugeMetricPrecipTotal = metrics.NewGaugeFloat64()
 
+var dictionaryDataMap = map[string /* */ ]interface{}
+
 func (m *managerInflux) recordInfluxObservation(obs *weatherUndergroundObservation) error {
+
+	values := []int64{
+		obs.Winddir,
+		obs.Humidity,
+		obs.Metric.Temp,
+		obs.Metric.HeatIndex,
+		obs.Metric.Dewpt,
+		obs.Metric.WindChill,
+		obs.Metric.WindSpeed,
+		obs.Metric.WindGust,
+		obs.Metric.Elev,
+	}
+	// int64s
 	gaugeWinddir.Update(obs.Winddir)
 	gaugeHumidity.Update(obs.Humidity)
 	gaugeMetricTemp.Update(obs.Metric.Temp)
@@ -262,10 +278,15 @@ func (m *managerInflux) recordInfluxObservation(obs *weatherUndergroundObservati
 	gaugeMetricWindChill.Update(obs.Metric.WindChill)
 	gaugeMetricWindSpeed.Update(obs.Metric.WindSpeed)
 	gaugeMetricWindGust.Update(obs.Metric.WindGust)
+	gaugeMetricElev.Update(obs.Metric.Elev)
+
+	// float64s
 	gaugeMetricPressure.Update(obs.Metric.Pressure)
 	gaugeMetricPrecipRate.Update(obs.Metric.PrecipRate)
 	gaugeMetricPrecipTotal.Update(obs.Metric.PrecipTotal)
-	gaugeMetricElev.Update(obs.Metric.Elev)
+
+
+
 	return nil
 }
 
