@@ -19,12 +19,19 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/url"
+	"os"
 	"time"
 
-	"net/http"
-	"github.com/spf13/cobra"
 	log "github.com/ethereum/go-ethereum/log"
+	"github.com/ethereum/go-ethereum/metrics"
+	metricsI "github.com/ethereum/go-ethereum/metrics/influxdb"
+	"github.com/spf13/cobra"
+)
+
+var (
+	myRegistry = metrics.NewRegistry()
 )
 
 // ETLCmd represents the ETL command
@@ -38,6 +45,10 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+		glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(true)))
+		glogger.Verbosity(log.Lvl(log.LvlDebug))
+		log.Root().SetHandler(glogger)
+
 		// ---------------------------------- SETUP/DEBUG
 		log.Debug("ETL called")
 		// log.Debug(cmd.ParseFlags(args)) // This is unnecessary, but harmless.
@@ -47,12 +58,58 @@ to quickly create a Cobra application.`,
 		toggleVal, _ := cmd.Flags().GetBool("toggle")
 		log.Debug("flags", "toggle", toggleVal)
 
+		dneVal, err := cmd.Flags().GetBool("dne")
+		log.Debug("flags", "dne", dneVal, "err", err)
+
 		log.Info("test")
 		// ---------------------------------- EO SETUP/DEBUG
 
+		// InfluxDB credentials
+		influxEndpointVal, _ := cmd.PersistentFlags().GetString("influx.endpoint")
+		influxTokenVal, _ := cmd.PersistentFlags().GetString("influx.token")
+		influxOrgVal, _ := cmd.PersistentFlags().GetString("influx.org")
+		influxBucketVal, _ := cmd.PersistentFlags().GetString("influx.bucket")
+
+		// WeatherUnderground Credentials
+		wuStationsVal, _ := cmd.PersistentFlags().GetStringSlice("wu.stations")
+		wuAPIKeyVal, _ := cmd.PersistentFlags().GetString("wu.apikey")
+
+		// Application config
+		appIntervalVal, _ := cmd.PersistentFlags().GetDuration("etl.interval")
+
+		// This is a strange pattern. /metrics, I mean.
+		// I'm using it as a library, but I don't think it's exactly intended to be one.
+		metricsI.InfluxDBV2WithTags(
+			myRegistry,
+			10*time.Second,
+			influxEndpointVal,
+			influxTokenVal,
+			influxBucketVal,
+			influxOrgVal,
+			"wu.",
+			nil,
+			)
+
+		manWU := &managerWU{apiKey: wuAPIKeyVal}
+
+		rc := &runConfig{
+			manWU:         manWU,
+			managerInflux: nil,
+			stations:      wuStationsVal,
+			interval:      appIntervalVal,
+		}
+
+		run(rc)
 
 
 	},
+}
+
+type runConfig struct {
+	manWU *managerWU
+	managerInflux *managerInflux
+	stations []string
+	interval time.Duration
 }
 
 type managerWU struct {
@@ -60,9 +117,6 @@ type managerWU struct {
 }
 
 type managerInflux struct {
-	dbName string
-	user string
-	password string
 }
 
 type weatherUndergroundObservation struct {
@@ -83,8 +137,8 @@ type weatherUndergroundObservation struct {
 	Epoch uint64 `json:"epoch"`
 	Lat float64 `json:"lat"`
 	Uv *float64 `json:"uv"`
-	Winddir float64 `json:"winddir"`
-	Humidity float64 `json:"humidity"`
+	Winddir int64 `json:"winddir"`
+	Humidity int64 `json:"humidity"`
 	QcStatus float64 `json:"qcStatus"`
 
 	Metric weatherUndergroundObservationReport `json:"metric"`
@@ -100,50 +154,51 @@ func (w *weatherUndergroundObservation) MustParse() {
 }
 
 type weatherUndergroundObservationReport struct {
-	Temp float64 `json:"temp"`
-	HeatIndex float64 `json:"heatIndex"`
-	Dewpt float64 `json:"dewpt"`
-	WindChill float64 `json:"windChill"`
-	WindSpeed float64 `json:"windSpeed"`
-	WindGust float64 `json:"windGust"`
+	Temp int64 `json:"temp"`
+	HeatIndex int64 `json:"heatIndex"`
+	Dewpt int64 `json:"dewpt"`
+	WindChill int64 `json:"windChill"`
+	WindSpeed int64 `json:"windSpeed"`
+	WindGust int64 `json:"windGust"`
 	Pressure float64 `json:"pressure"`
 	PrecipRate float64 `json:"precipRate"`
 	PrecipTotal float64 `json:"precipTotal"`
-	Elev float64 `json:"elev"`
+	Elev int64 `json:"elev"`
 }
 
 type weatherUndergroundObservations struct {
-	Observations []weatherUndergroundObservation `json:"observations"`
+	Observations []*weatherUndergroundObservation `json:"observations"`
 }
 
-func run() {
-	var interval int32
+func run(rc *runConfig) {
 	rerun := true
-	stations := []string{}
 
-	manWU := new(managerWU)
-	manIF := new(managerInflux)
-
+	// This is a weird wrapper loop thing.
+	// The intention is to always run the program once (and ONLY once if
+	// the interval=0), but to run the program at internal N forever
+	// if indeed a nonzero interval is configured.
 	for rerun {
-		stationLoop:
-		for _, station := range stations {
 
-			res, err := manWU.requestWU(station)
+		stationsLoop:
+		for _, station := range rc.stations {
+
+			res, err := rc.manWU.requestWU(station)
 			if err != nil {
 				log.Error("Request weatherunderground API", "error", err)
-				break stationLoop
+				break stationsLoop
 			}
-			for j, obs := range res.Observations {
-				err := manIF.postInfluxObservation(obs)
+			for _, obs := range res.Observations {
+				obs.MustParse()
+				err := rc.managerInflux.recordInfluxObservation(obs)
 				if err != nil {
 					log.Error("Post InfluxDB", "error", err)
 					continue
 				}
 			}
 		}
-		rerun = interval > 0
+		rerun = rc.interval > 0
 		if rerun {
-			time.Sleep(time.Duration(interval) * time.Second)
+			time.Sleep(rc.interval)
 		}
 	}
 }
@@ -184,11 +239,47 @@ func (m *managerWU) requestWU(station string) (res *weatherUndergroundObservatio
 	return data, nil
 }
 
-func (m *managerInflux) postInfluxObservation(obs *weatherUndergroundObservation) error {
+var gaugeWinddir = metrics.NewRegisteredGauge("winddir", myRegistry)
+var gaugeHumidity = metrics.NewRegisteredGauge("humidity", myRegistry)
+var gaugeMetricTemp = metrics.NewRegisteredGauge("temp.c", myRegistry)
+var gaugeMetricHI = metrics.NewRegisteredGauge("heat_index.c", myRegistry)
+var gaugeMetricDewpoint = metrics.NewRegisteredGauge("dew_point", myRegistry)
+var gaugeMetricWindChill = metrics.NewRegisteredGauge("wind_chill", myRegistry)
+var gaugeMetricWindSpeed = metrics.NewRegisteredGauge("wind_speed", myRegistry)
+var gaugeMetricWindGust = metrics.NewRegisteredGauge("wind_gust", myRegistry)
+var gaugeMetricElev = metrics.NewRegisteredGauge("elev", myRegistry)
 
+var gaugeMetricPressure = metrics.NewGaugeFloat64()
+var gaugeMetricPrecipRate = metrics.NewGaugeFloat64()
+var gaugeMetricPrecipTotal = metrics.NewGaugeFloat64()
+
+func (m *managerInflux) recordInfluxObservation(obs *weatherUndergroundObservation) error {
+	gaugeWinddir.Update(obs.Winddir)
+	gaugeHumidity.Update(obs.Humidity)
+	gaugeMetricTemp.Update(obs.Metric.Temp)
+	gaugeMetricHI.Update(obs.Metric.HeatIndex)
+	gaugeMetricDewpoint.Update(obs.Metric.Dewpt)
+	gaugeMetricWindChill.Update(obs.Metric.WindChill)
+	gaugeMetricWindSpeed.Update(obs.Metric.WindSpeed)
+	gaugeMetricWindGust.Update(obs.Metric.WindGust)
+	gaugeMetricPressure.Update(obs.Metric.Pressure)
+	gaugeMetricPrecipRate.Update(obs.Metric.PrecipRate)
+	gaugeMetricPrecipTotal.Update(obs.Metric.PrecipTotal)
+	gaugeMetricElev.Update(obs.Metric.Elev)
+	return nil
 }
 
 func init() {
+	if err := myRegistry.Register("pressure", gaugeMetricPrecipRate); err != nil {
+		panic(err)
+	}
+	if err := myRegistry.Register("precip_rate", gaugeMetricPrecipRate); err != nil {
+		panic(err)
+	}
+	if err := myRegistry.Register("precip_total", gaugeMetricPrecipTotal); err != nil {
+		panic(err)
+	}
+
 	rootCmd.AddCommand(ETLCmd)
 
 	// Here you will define your flags and configuration settings.
@@ -197,6 +288,9 @@ func init() {
 	// and all subcommands, e.g.:
 	ETLCmd.PersistentFlags().String("foo", "", "A help for foo")
 	ETLCmd.PersistentFlags().StringArray("stations", nil, "List of PWS Station IDs")
+	ETLCmd.PersistentFlags().StringArray("influx.server", nil, "List of PWS Station IDs")
+	ETLCmd.PersistentFlags().StringArray("influx.user", nil, "List of PWS Station IDs")
+	ETLCmd.PersistentFlags().StringArray("influx.pass", nil, "List of PWS Station IDs")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
