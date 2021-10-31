@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -25,8 +26,6 @@ import (
 	"time"
 
 	log "github.com/ethereum/go-ethereum/log"
-	"github.com/ethereum/go-ethereum/metrics"
-	metricsI "github.com/ethereum/go-ethereum/metrics/influxdb"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb2_api "github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/spf13/cobra"
@@ -51,56 +50,43 @@ to quickly create a Cobra application.`,
 		log.Root().SetHandler(glogger)
 
 		// ---------------------------------- SETUP/DEBUG
-		log.Debug("ETL called")
-		// log.Debug(cmd.ParseFlags(args)) // This is unnecessary, but harmless.
-		fooVal, _ := cmd.PersistentFlags().GetString("foo")
-		log.Debug("flags", "foo", fooVal)
-
-		toggleVal, _ := cmd.Flags().GetBool("toggle")
-		log.Debug("flags", "toggle", toggleVal)
-
-		dneVal, err := cmd.Flags().GetBool("dne")
-		log.Debug("flags", "dne", dneVal, "err", err)
-
-		log.Info("test")
+		// log.Debug("ETL called")
+		// // log.Debug(cmd.ParseFlags(args)) // This is unnecessary, but harmless.
+		// fooVal, _ := cmd.PersistentFlags().GetString("foo")
+		// log.Debug("flags", "foo", fooVal)
+		//
+		// toggleVal, _ := cmd.Flags().GetBool("toggle")
+		// log.Debug("flags", "toggle", toggleVal)
+		//
+		// dneVal, err := cmd.Flags().GetBool("dne")
+		// log.Debug("flags", "dne", dneVal, "err", err)
+		//
+		// log.Info("test")
 
 		// ---------------------------------- EO SETUP/DEBUG
 
-		// InfluxDB credentials
-		influxEndpointVal, _ := cmd.PersistentFlags().GetString("influx.endpoint")
-		influxTokenVal, _ := cmd.PersistentFlags().GetString("influx.token")
-		influxOrgVal, _ := cmd.PersistentFlags().GetString("influx.org")
-		influxBucketVal, _ := cmd.PersistentFlags().GetString("influx.bucket")
 
-		// WeatherUnderground Credentials
-		wuStationsVal, _ := cmd.PersistentFlags().GetStringSlice("wu.stations")
-		wuAPIKeyVal, _ := cmd.PersistentFlags().GetString("wu.apikey")
+		// Set up a shared instance of this client API.
+		c := influxdb2.NewClient(flagInfluxEndpoint, flagInfluxToken)
+		api := c.WriteAPIBlocking(flagInfluxOrg, flagInfluxBucket)
 
-		// Application config
-		appIntervalVal, _ := cmd.PersistentFlags().GetDuration("etl.interval")
-
-
-		c := influxdb2.NewClient(influxEndpointVal, influxTokenVal)
-		api := c.WriteAPIBlocking(influxOrgVal, influxBucketVal)
-
-		manWU := &managerWU{apiKey: wuAPIKeyVal}
+		manWU := &managerWU{
+			apiKey: flagWUAPIKey,
+		}
 
 		manIF := &managerInflux{
-			ifClient: api,
+			clientAPI: api,
 			namespace: "wu.",
-
 		}
 
 		rc := &runConfig{
 			manWU:         manWU,
 			managerInflux: manIF,
-			stations:      wuStationsVal,
-			interval:      appIntervalVal,
+			stations:      flagWUStations,
+			interval:      flagAppInterval,
 		}
 
 		run(rc)
-
-
 	},
 }
 
@@ -116,59 +102,60 @@ type managerWU struct {
 }
 
 type managerInflux struct {
-ifClient influxdb2_api.WriteAPIBlocking
-namespace string
+	currentStation string
+clientAPI          influxdb2_api.WriteAPIBlocking
+namespace          string
 }
 
 type weatherUndergroundObservation struct {
-	// stuff..
-	StationID string `json:"stationID"`
-
-	ObsTimeUtc string `json:"obsTimeUtc"`
-	ObsTimeUTCTime time.Time
-	ObsTimeLocal string `json:"obsTimeLocal"`
-	ObsTimeLocalTime time.Time
-
-	Neighborhood string `json:"neighborhood"`
-	SoftwareType *float64 `json:"softwareType"`
-	Country float64 `json:"country"`
-	SolarRadiation *float64 `json:"solarRadiation"`
-	Lon float64 `json:"lon"`
-	RealtimeFrequency *float64 `json:"realtimeFrequency"`
-	Epoch uint64 `json:"epoch"`
-	Lat float64 `json:"lat"`
-	Uv *float64 `json:"uv"`
-	Winddir int64 `json:"winddir"`
-	Humidity int64 `json:"humidity"`
-	QcStatus float64 `json:"qcStatus"`
-
-	Metric weatherUndergroundObservationReport `json:"metric"`
-	Imperial /* ??? */ weatherUndergroundObservationReport `json:"imperial"`
+	// // stuff..
+	// StationID string `json:"stationID"`
+	//
+	// ObsTimeUtc string `json:"obsTimeUtc"`
+	// ObsTimeUTCTime time.Time
+	// ObsTimeLocal string `json:"obsTimeLocal"`
+	// ObsTimeLocalTime time.Time
+	//
+	// Neighborhood string `json:"neighborhood"`
+	// SoftwareType *float64 `json:"softwareType"`
+	// Country float64 `json:"country"`
+	// SolarRadiation *float64 `json:"solarRadiation"`
+	// Lon float64 `json:"lon"`
+	// RealtimeFrequency *float64 `json:"realtimeFrequency"`
+	// Epoch uint64 `json:"epoch"`
+	// Lat float64 `json:"lat"`
+	// Uv *float64 `json:"uv"`
+	// Winddir int64 `json:"winddir"`
+	// Humidity int64 `json:"humidity"`
+	// QcStatus float64 `json:"qcStatus"`
+	//
+	// Metric weatherUndergroundObservationReport `json:"metric"`
+	// Imperial /* ??? */ weatherUndergroundObservationReport `json:"imperial"`
 }
-
-func (w *weatherUndergroundObservation) MustInflate() {
-	var err error
-	w.ObsTimeUTCTime, err = time.Parse(time.RFC3339, w.ObsTimeUtc)
-	if err != nil {
-		log.Crit("Parse observation UTC time", "error", err)
-	}
-}
+//
+// func (w *weatherUndergroundObservation) MustInflate() {
+// 	var err error
+// 	w.ObsTimeUTCTime, err = time.Parse(time.RFC3339, w.ObsTimeUtc)
+// 	if err != nil {
+// 		log.Crit("Parse observation UTC time", "error", err)
+// 	}
+// }
 
 type weatherUndergroundObservationReport struct {
-	Temp int64 `json:"temp"`
-	HeatIndex int64 `json:"heatIndex"`
-	Dewpt int64 `json:"dewpt"`
-	WindChill int64 `json:"windChill"`
-	WindSpeed int64 `json:"windSpeed"`
-	WindGust int64 `json:"windGust"`
-	Pressure float64 `json:"pressure"`
-	PrecipRate float64 `json:"precipRate"`
-	PrecipTotal float64 `json:"precipTotal"`
-	Elev int64 `json:"elev"`
+	// Temp int64 `json:"temp"`
+	// HeatIndex int64 `json:"heatIndex"`
+	// Dewpt int64 `json:"dewpt"`
+	// WindChill int64 `json:"windChill"`
+	// WindSpeed int64 `json:"windSpeed"`
+	// WindGust int64 `json:"windGust"`
+	// Pressure float64 `json:"pressure"`
+	// PrecipRate float64 `json:"precipRate"`
+	// PrecipTotal float64 `json:"precipTotal"`
+	// Elev int64 `json:"elev"`
 }
 
 type weatherUndergroundObservations struct {
-	Observations []*weatherUndergroundObservation `json:"observations"`
+	Observations []interface{} `json:"observations"`
 }
 
 func run(rc *runConfig) {
@@ -182,6 +169,7 @@ func run(rc *runConfig) {
 
 		stationsLoop:
 		for _, station := range rc.stations {
+			rc.managerInflux.currentStation = station
 
 			res, err := rc.manWU.requestWU(station)
 			if err != nil {
@@ -189,7 +177,6 @@ func run(rc *runConfig) {
 				break stationsLoop
 			}
 			for _, obs := range res.Observations {
-				obs.MustInflate()
 				err := rc.managerInflux.recordInfluxObservation(obs)
 				if err != nil {
 					log.Error("Post InfluxDB", "error", err)
@@ -206,7 +193,7 @@ func run(rc *runConfig) {
 
 func (m *managerWU) requestWU(station string) (res *weatherUndergroundObservations, err error) {
 	payload := url.Values{}
-	payload.Add("stationID", station)
+	payload.Add("stationId", station)
 	payload.Add("format", "json")
 	payload.Add("units", "m")
 	payload.Add("apiKey", m.apiKey)
@@ -216,11 +203,9 @@ func (m *managerWU) requestWU(station string) (res *weatherUndergroundObservatio
 	requestStart := time.Now()
 	response, err := http.Get(endpoint)
 	if err != nil {
-		requestLogger.Error("", "error", err)
 		return nil, err
 	}
 	if response.StatusCode > 300 || response.StatusCode < 200 {
-		requestLogger.Error("", "statusCode", response.StatusCode, "status", response.Status)
 		return nil, fmt.Errorf("request failed: %d", response.StatusCode)
 	}
 
@@ -240,67 +225,59 @@ func (m *managerWU) requestWU(station string) (res *weatherUndergroundObservatio
 	return data, nil
 }
 
-var gaugeWinddir = metrics.NewRegisteredGauge("winddir", myRegistry)
-var gaugeHumidity = metrics.NewRegisteredGauge("humidity", myRegistry)
-var gaugeMetricTemp = metrics.NewRegisteredGauge("temp.c", myRegistry)
-var gaugeMetricHI = metrics.NewRegisteredGauge("heat_index.c", myRegistry)
-var gaugeMetricDewpoint = metrics.NewRegisteredGauge("dew_point", myRegistry)
-var gaugeMetricWindChill = metrics.NewRegisteredGauge("wind_chill", myRegistry)
-var gaugeMetricWindSpeed = metrics.NewRegisteredGauge("wind_speed", myRegistry)
-var gaugeMetricWindGust = metrics.NewRegisteredGauge("wind_gust", myRegistry)
-var gaugeMetricElev = metrics.NewRegisteredGauge("elev", myRegistry)
-
-var gaugeMetricPressure = metrics.NewGaugeFloat64()
-var gaugeMetricPrecipRate = metrics.NewGaugeFloat64()
-var gaugeMetricPrecipTotal = metrics.NewGaugeFloat64()
-
-var dictionaryDataMap = map[string /* */ ]interface{}
-
-func (m *managerInflux) recordInfluxObservation(obs *weatherUndergroundObservation) error {
-
-	values := []int64{
-		obs.Winddir,
-		obs.Humidity,
-		obs.Metric.Temp,
-		obs.Metric.HeatIndex,
-		obs.Metric.Dewpt,
-		obs.Metric.WindChill,
-		obs.Metric.WindSpeed,
-		obs.Metric.WindGust,
-		obs.Metric.Elev,
+func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[string]interface{}) {
+	now := time.Now()
+	ctx := context.Background()
+	if parentAnnotation != "" {
+		parentAnnotation = parentAnnotation + "."
 	}
-	// int64s
-	gaugeWinddir.Update(obs.Winddir)
-	gaugeHumidity.Update(obs.Humidity)
-	gaugeMetricTemp.Update(obs.Metric.Temp)
-	gaugeMetricHI.Update(obs.Metric.HeatIndex)
-	gaugeMetricDewpoint.Update(obs.Metric.Dewpt)
-	gaugeMetricWindChill.Update(obs.Metric.WindChill)
-	gaugeMetricWindSpeed.Update(obs.Metric.WindSpeed)
-	gaugeMetricWindGust.Update(obs.Metric.WindGust)
-	gaugeMetricElev.Update(obs.Metric.Elev)
+	mapLoop:
+	for k, v := range myMap {
 
-	// float64s
-	gaugeMetricPressure.Update(obs.Metric.Pressure)
-	gaugeMetricPrecipRate.Update(obs.Metric.PrecipRate)
-	gaugeMetricPrecipTotal.Update(obs.Metric.PrecipTotal)
+		// Recurse and break if the type is a map "ie 'metric'/'imperial' or whatever
+		switch t := v.(type) {
+		case map[string]interface{}:
+			m.postMapRecursive(k, t)
+			continue mapLoop
+		}
 
+		measurement := fmt.Sprintf("%s%s%s.gauge", m.namespace, parentAnnotation, k)
+		fields := map[string]interface{}{
+			"value": v,
+		}
 
+		tags := map[string]string{
+			"stationID": m.currentStation,
+		}
+
+		pt := influxdb2.NewPoint(measurement, tags, fields, now)
+
+		if err := m.clientAPI.WritePoint(ctx, pt); err != nil {
+			log.Error("Write point", "error", err)
+		} else {
+			log.Debug("Wrote point", "station", m.currentStation, measurement, v)
+		}
+	}
+}
+
+func (m *managerInflux) recordInfluxObservation(obs interface{}) error {
+	obsT := obs.(map[string]interface{})
+	m.postMapRecursive("", obsT)
 
 	return nil
 }
 
-func init() {
-	if err := myRegistry.Register("pressure", gaugeMetricPrecipRate); err != nil {
-		panic(err)
-	}
-	if err := myRegistry.Register("precip_rate", gaugeMetricPrecipRate); err != nil {
-		panic(err)
-	}
-	if err := myRegistry.Register("precip_total", gaugeMetricPrecipTotal); err != nil {
-		panic(err)
-	}
+var flagInfluxEndpoint string
+var flagInfluxToken string
+var flagInfluxOrg string
+var flagInfluxBucket string
 
+var flagWUStations []string
+var flagWUAPIKey string
+
+var flagAppInterval time.Duration
+
+func init() {
 	rootCmd.AddCommand(ETLCmd)
 
 	// Here you will define your flags and configuration settings.
@@ -308,10 +285,17 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	ETLCmd.PersistentFlags().String("foo", "", "A help for foo")
-	ETLCmd.PersistentFlags().StringArray("stations", nil, "List of PWS Station IDs")
-	ETLCmd.PersistentFlags().StringArray("influx.server", nil, "List of PWS Station IDs")
-	ETLCmd.PersistentFlags().StringArray("influx.user", nil, "List of PWS Station IDs")
-	ETLCmd.PersistentFlags().StringArray("influx.pass", nil, "List of PWS Station IDs")
+
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxEndpoint, "influx.endpoint", "", "")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxToken, "influx.token", "", "")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxOrg, "influx.org", "", "")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxBucket, "influx.bucket", "weather/autogen", "Use slashed-delim db/retention for v1.8. Otherwise v2.")
+
+	ETLCmd.PersistentFlags().StringSliceVar(&flagWUStations, "wu.stations", nil, "")
+	ETLCmd.PersistentFlags().StringVar(&flagWUAPIKey, "wu.apikey", "", "")
+
+	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app.interval", 32* time.Second, "0=oneshot")
+
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
