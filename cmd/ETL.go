@@ -32,8 +32,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var ()
-
 // ETLCmd represents the ETL command
 var ETLCmd = &cobra.Command{
 	Use:   "ETL",
@@ -49,21 +47,6 @@ to quickly create a Cobra application.`,
 		glogger.Verbosity(log.Lvl(flagAppVerbosity))
 		log.Root().SetHandler(glogger)
 
-		// ---------------------------------- SETUP/DEBUG
-		// log.Debug("ETL called")
-		// // log.Debug(cmd.ParseFlags(args)) // This is unnecessary, but harmless.
-		// fooVal, _ := cmd.PersistentFlags().GetString("foo")
-		// log.Debug("flags", "foo", fooVal)
-		//
-		// toggleVal, _ := cmd.Flags().GetBool("toggle")
-		// log.Debug("flags", "toggle", toggleVal)
-		//
-		// dneVal, err := cmd.Flags().GetBool("dne")
-		// log.Debug("flags", "dne", dneVal, "err", err)
-		//
-		// log.Info("test")
-
-		// ---------------------------------- EO SETUP/DEBUG
 
 		// Set up a shared instance of this client API.
 		c := influxdb2.NewClient(flagInfluxEndpoint, flagInfluxToken)
@@ -87,193 +70,6 @@ to quickly create a Cobra application.`,
 
 		run(rc)
 	},
-}
-
-type runConfig struct {
-	manWU         *managerWU
-	managerInflux *managerInflux
-	stations      []string
-	interval      time.Duration
-}
-
-type managerWU struct {
-	apiKey string
-}
-
-type managerInflux struct {
-	currentStation string
-	clientAPI      influxdb2_api.WriteAPIBlocking
-	namespace      string
-}
-
-type weatherUndergroundObservation struct {
-	// // stuff..
-	// StationID string `json:"stationID"`
-	//
-	// ObsTimeUtc string `json:"obsTimeUtc"`
-	// ObsTimeUTCTime time.Time
-	// ObsTimeLocal string `json:"obsTimeLocal"`
-	// ObsTimeLocalTime time.Time
-	//
-	// Neighborhood string `json:"neighborhood"`
-	// SoftwareType *float64 `json:"softwareType"`
-	// Country float64 `json:"country"`
-	// SolarRadiation *float64 `json:"solarRadiation"`
-	// Lon float64 `json:"lon"`
-	// RealtimeFrequency *float64 `json:"realtimeFrequency"`
-	// Epoch uint64 `json:"epoch"`
-	// Lat float64 `json:"lat"`
-	// Uv *float64 `json:"uv"`
-	// Winddir int64 `json:"winddir"`
-	// Humidity int64 `json:"humidity"`
-	// QcStatus float64 `json:"qcStatus"`
-	//
-	// Metric weatherUndergroundObservationReport `json:"metric"`
-	// Imperial /* ??? */ weatherUndergroundObservationReport `json:"imperial"`
-}
-
-//
-// func (w *weatherUndergroundObservation) MustInflate() {
-// 	var err error
-// 	w.ObsTimeUTCTime, err = time.Parse(time.RFC3339, w.ObsTimeUtc)
-// 	if err != nil {
-// 		log.Crit("Parse observation UTC time", "error", err)
-// 	}
-// }
-
-type weatherUndergroundObservationReport struct {
-	// Temp int64 `json:"temp"`
-	// HeatIndex int64 `json:"heatIndex"`
-	// Dewpt int64 `json:"dewpt"`
-	// WindChill int64 `json:"windChill"`
-	// WindSpeed int64 `json:"windSpeed"`
-	// WindGust int64 `json:"windGust"`
-	// Pressure float64 `json:"pressure"`
-	// PrecipRate float64 `json:"precipRate"`
-	// PrecipTotal float64 `json:"precipTotal"`
-	// Elev int64 `json:"elev"`
-}
-
-type weatherUndergroundObservations struct {
-	Observations []interface{} `json:"observations"`
-}
-
-func run(rc *runConfig) {
-	rerun := true
-
-	// This is a weird wrapper loop thing.
-	// The intention is to always run the program once (and ONLY once if
-	// the interval=0), but to run the program at internal N forever
-	// if indeed a nonzero interval is configured.
-	for rerun {
-
-		rerun = rc.interval > 0
-		interval := rc.interval
-
-	stationsLoop:
-		for _, station := range rc.stations {
-			rc.managerInflux.currentStation = station
-
-			res, err := rc.manWU.requestWU(station)
-			if err != nil {
-				interval = time.Hour // If we encounter an error reading from the API, give it an hour. It could be a rate limit thing.
-				break stationsLoop
-			}
-			for i, obs := range res.Observations {
-				start := time.Now()
-				err := rc.managerInflux.recordInfluxObservation(obs)
-				if err != nil {
-					log.Error("Post InfluxDB", "error", err)
-					continue
-				}
-				log.Info("Posted observation to influx", "i", i, "elapsed", time.Since(start).Round(time.Millisecond))
-			}
-		}
-		if rerun {
-			log.Warn("Sleeping", "interval", interval)
-			time.Sleep(rc.interval)
-		}
-	}
-}
-
-func (m *managerWU) requestWU(station string) (res *weatherUndergroundObservations, err error) {
-	payload := url.Values{}
-	payload.Add("stationId", station)
-	payload.Add("format", "json")
-	payload.Add("units", "m")
-	payload.Add("apiKey", m.apiKey)
-	endpoint := "https://api.weather.com/v2/pws/observations/current?" + payload.Encode()
-	requestLogger := log.New("HTTP.GET", endpoint)
-
-	requestStart := time.Now()
-	response, err := http.Get(endpoint)
-	if err != nil {
-		requestLogger.Error("Request weatherunderground API", "error", err)
-		return nil, err
-	}
-	if response.StatusCode > 300 || response.StatusCode < 200 {
-		requestLogger.Error("Request weatherunderground bad response", "res.code", response.StatusCode, "res", response.Status)
-		return nil, fmt.Errorf("request failed: %d", response.StatusCode)
-	}
-
-	// Request has been made OK.
-	requestLogger.Info("OK", "elapsed", time.Since(requestStart).Round(time.Millisecond))
-
-	// Decode the response body.
-	data := &weatherUndergroundObservations{}
-	dataBytes, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(dataBytes, data)
-	if err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[string]interface{}) {
-	now := time.Now()
-	ctx := context.Background()
-	if parentAnnotation != "" {
-		parentAnnotation = parentAnnotation + "."
-	}
-mapLoop:
-	for k, v := range myMap {
-
-		// Recurse and break if the type is a map "ie 'metric'/'imperial' or whatever
-		switch t := v.(type) {
-		case map[string]interface{}:
-			m.postMapRecursive(k, t)
-			continue mapLoop
-		}
-
-		measurement := fmt.Sprintf("%s%s%s.gauge", m.namespace, parentAnnotation, k)
-		fields := map[string]interface{}{
-			"value": v,
-		}
-
-		tags := map[string]string{
-			"stationID": m.currentStation,
-		}
-
-		pt := influxdb2.NewPoint(measurement, tags, fields, now)
-
-		if err := m.clientAPI.WritePoint(ctx, pt); err != nil {
-			log.Error("Write point", "error", err)
-		} else {
-			log.Debug("Wrote point", "station", m.currentStation, measurement, v)
-		}
-	}
-}
-
-func (m *managerInflux) recordInfluxObservation(obs interface{}) error {
-	obsT, ok := obs.(map[string]interface{})
-	if !ok {
-		return errors.New("failed to cast observation to map")
-	}
-	m.postMapRecursive("", obsT)
-	return nil
 }
 
 var flagInfluxEndpoint string
@@ -311,3 +107,143 @@ func init() {
 	// is called directly, e.g.:
 	ETLCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }
+
+type runConfig struct {
+	manWU         *managerWU
+	managerInflux *managerInflux
+	stations      []string
+	interval      time.Duration
+}
+
+type managerWU struct {
+	apiKey string
+}
+
+type managerInflux struct {
+	currentStation string
+	clientAPI      influxdb2_api.WriteAPIBlocking
+	namespace      string
+}
+
+type weatherUndergroundObservations struct {
+	Observations []interface{} `json:"observations"`
+}
+
+func run(rc *runConfig) {
+	rerun := true
+
+	// This is a weird wrapper loop thing.
+	// The intention is to always run the program once (and ONLY once if
+	// the interval=0), but to run the program at interval N forever
+	// if indeed a nonzero interval is configured.
+	for rerun {
+
+		rerun = rc.interval > 0
+		interval := rc.interval
+
+	stationsLoop:
+		for _, station := range rc.stations {
+			rc.managerInflux.currentStation = station
+
+			res, err := rc.manWU.requestCurrent(station)
+			if err != nil {
+				interval = time.Hour // If we encounter an error reading from the API, give it an hour. It could be a rate limit thing.
+				break stationsLoop
+			}
+			for i, obs := range res.Observations {
+				start := time.Now()
+				err := rc.managerInflux.record(obs)
+				if err != nil {
+					log.Error("Post InfluxDB", "error", err)
+					continue
+				}
+				log.Info("Posted observation to influx", "i", i, "elapsed", time.Since(start).Round(time.Millisecond))
+			}
+		}
+		if rerun {
+			log.Warn("Sleeping", "interval", interval)
+			time.Sleep(rc.interval)
+		}
+	}
+}
+
+func (m *managerWU) requestCurrent(station string) (res *weatherUndergroundObservations, err error) {
+	payload := url.Values{}
+	payload.Add("stationId", station)
+	payload.Add("format", "json")
+	payload.Add("units", "m")
+	payload.Add("apiKey", m.apiKey)
+	endpoint := "https://api.weather.com/v2/pws/observations/current?" + payload.Encode()
+	requestLogger := log.New("HTTP.GET", endpoint)
+
+	requestStart := time.Now()
+	response, err := http.Get(endpoint)
+	if err != nil {
+		requestLogger.Error("Request weatherunderground API", "error", err)
+		return nil, err
+	}
+	if response.StatusCode >= 300 || response.StatusCode < 200 {
+		requestLogger.Error("Request weatherunderground bad response", "res.code", response.StatusCode, "res", response.Status)
+		return nil, fmt.Errorf("request failed: %d", response.StatusCode)
+	}
+
+	// Request has been made OK.
+	requestLogger.Info("OK", "elapsed", time.Since(requestStart).Round(time.Millisecond))
+
+	// Decode the response body.
+	data := &weatherUndergroundObservations{}
+	dataBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(dataBytes, data)
+	if err != nil {
+		return nil, err
+	}
+	return data, nil
+}
+
+func (m *managerInflux) record(obs interface{}) error {
+	obsT, ok := obs.(map[string]interface{})
+	if !ok {
+		return errors.New("failed to cast observation to map")
+	}
+	m.postMapRecursive("", obsT)
+	return nil
+}
+
+func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[string]interface{}) {
+	now := time.Now()
+	ctx := context.Background()
+	if parentAnnotation != "" {
+		parentAnnotation = parentAnnotation + "."
+	}
+mapLoop:
+	for k, v := range myMap {
+
+		// Recurse and break if the type is a map "ie 'metric'/'imperial' or whatever
+		switch t := v.(type) {
+		case map[string]interface{}:
+			m.postMapRecursive(k, t)
+			continue mapLoop
+		}
+
+		measurement := fmt.Sprintf("%s%s%s.gauge", m.namespace, parentAnnotation, k)
+		fields := map[string]interface{}{
+			"value": v,
+		}
+
+		tags := map[string]string{
+			"stationID": m.currentStation,
+		}
+
+		pt := influxdb2.NewPoint(measurement, tags, fields, now)
+
+		if err := m.clientAPI.WritePoint(ctx, pt); err != nil {
+			log.Error("Write point", "error", err)
+		} else {
+			log.Debug("Wrote point", "station", m.currentStation, measurement, v)
+		}
+	}
+}
+
