@@ -186,6 +186,7 @@ func run(rc *runConfig) {
 		}
 		rerun = rc.interval > 0
 		if rerun {
+			log.Warn("Sleeping", "interval", rc.interval)
 			time.Sleep(rc.interval)
 		}
 	}

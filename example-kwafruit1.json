@@ -4,7 +4,7 @@
       "stationID": "KWAFRUIT1", 
       "obsTimeUtc": "2021-10-19T16:20:30Z", 
       "obsTimeLocal": "2021-10-19 09:20:30", 
-      "neighborhood": "Fruitland", 
+      "neighborhood": "Fruitland", ``
       "softwareType": null, 
       "country": "US", 
       "solarRadiation": null, 
