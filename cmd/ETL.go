@@ -162,7 +162,7 @@ func run(rc *runConfig) {
 		}
 		if rerun {
 			log.Warn("Sleeping", "interval", interval)
-			time.Sleep(rc.interval)
+			time.Sleep(interval)
 		}
 	}
 }
