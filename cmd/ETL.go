@@ -32,8 +32,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var (
-)
+var ()
 
 // ETLCmd represents the ETL command
 var ETLCmd = &cobra.Command{
@@ -66,7 +65,6 @@ to quickly create a Cobra application.`,
 
 		// ---------------------------------- EO SETUP/DEBUG
 
-
 		// Set up a shared instance of this client API.
 		c := influxdb2.NewClient(flagInfluxEndpoint, flagInfluxToken)
 		api := c.WriteAPIBlocking(flagInfluxOrg, flagInfluxBucket)
@@ -92,10 +90,10 @@ to quickly create a Cobra application.`,
 }
 
 type runConfig struct {
-	manWU *managerWU
+	manWU         *managerWU
 	managerInflux *managerInflux
-	stations []string
-	interval time.Duration
+	stations      []string
+	interval      time.Duration
 }
 
 type managerWU struct {
@@ -104,8 +102,8 @@ type managerWU struct {
 
 type managerInflux struct {
 	currentStation string
-clientAPI          influxdb2_api.WriteAPIBlocking
-namespace          string
+	clientAPI      influxdb2_api.WriteAPIBlocking
+	namespace      string
 }
 
 type weatherUndergroundObservation struct {
@@ -133,6 +131,7 @@ type weatherUndergroundObservation struct {
 	// Metric weatherUndergroundObservationReport `json:"metric"`
 	// Imperial /* ??? */ weatherUndergroundObservationReport `json:"imperial"`
 }
+
 //
 // func (w *weatherUndergroundObservation) MustInflate() {
 // 	var err error
@@ -171,7 +170,7 @@ func run(rc *runConfig) {
 		rerun = rc.interval > 0
 		interval := rc.interval
 
-		stationsLoop:
+	stationsLoop:
 		for _, station := range rc.stations {
 			rc.managerInflux.currentStation = station
 
@@ -239,7 +238,7 @@ func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[stri
 	if parentAnnotation != "" {
 		parentAnnotation = parentAnnotation + "."
 	}
-	mapLoop:
+mapLoop:
 	for k, v := range myMap {
 
 		// Recurse and break if the type is a map "ie 'metric'/'imperial' or whatever
@@ -305,9 +304,8 @@ func init() {
 	ETLCmd.PersistentFlags().StringSliceVar(&flagWUStations, "wu.stations", nil, "")
 	ETLCmd.PersistentFlags().StringVar(&flagWUAPIKey, "wu.apikey", "", "")
 
-	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app.interval", 32* time.Second, "0=oneshot")
+	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app.interval", 32*time.Second, "0=oneshot")
 	ETLCmd.PersistentFlags().IntVar(&flagAppVerbosity, "app.verbosity", int(log.LvlInfo), "[0..5]")
-
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
