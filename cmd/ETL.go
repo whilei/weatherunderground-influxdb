@@ -18,6 +18,7 @@ package cmd
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -46,7 +47,7 @@ This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(true)))
-		glogger.Verbosity(log.Lvl(log.LvlDebug))
+		glogger.Verbosity(log.Lvl(flagAppVerbosity))
 		log.Root().SetHandler(glogger)
 
 		// ---------------------------------- SETUP/DEBUG
@@ -167,26 +168,30 @@ func run(rc *runConfig) {
 	// if indeed a nonzero interval is configured.
 	for rerun {
 
+		rerun = rc.interval > 0
+		interval := rc.interval
+
 		stationsLoop:
 		for _, station := range rc.stations {
 			rc.managerInflux.currentStation = station
 
 			res, err := rc.manWU.requestWU(station)
 			if err != nil {
-				log.Error("Request weatherunderground API", "error", err)
+				interval = time.Hour // If we encounter an error reading from the API, give it an hour. It could be a rate limit thing.
 				break stationsLoop
 			}
-			for _, obs := range res.Observations {
+			for i, obs := range res.Observations {
+				start := time.Now()
 				err := rc.managerInflux.recordInfluxObservation(obs)
 				if err != nil {
 					log.Error("Post InfluxDB", "error", err)
 					continue
 				}
+				log.Info("Posted observation to influx", "i", i, "elapsed", time.Since(start).Round(time.Millisecond))
 			}
 		}
-		rerun = rc.interval > 0
 		if rerun {
-			log.Warn("Sleeping", "interval", rc.interval)
+			log.Warn("Sleeping", "interval", interval)
 			time.Sleep(rc.interval)
 		}
 	}
@@ -204,9 +209,11 @@ func (m *managerWU) requestWU(station string) (res *weatherUndergroundObservatio
 	requestStart := time.Now()
 	response, err := http.Get(endpoint)
 	if err != nil {
+		requestLogger.Error("Request weatherunderground API", "error", err)
 		return nil, err
 	}
 	if response.StatusCode > 300 || response.StatusCode < 200 {
+		requestLogger.Error("Request weatherunderground bad response", "res.code", response.StatusCode, "res", response.Status)
 		return nil, fmt.Errorf("request failed: %d", response.StatusCode)
 	}
 
@@ -262,9 +269,11 @@ func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[stri
 }
 
 func (m *managerInflux) recordInfluxObservation(obs interface{}) error {
-	obsT := obs.(map[string]interface{})
+	obsT, ok := obs.(map[string]interface{})
+	if !ok {
+		return errors.New("failed to cast observation to map")
+	}
 	m.postMapRecursive("", obsT)
-
 	return nil
 }
 
@@ -277,6 +286,7 @@ var flagWUStations []string
 var flagWUAPIKey string
 
 var flagAppInterval time.Duration
+var flagAppVerbosity int
 
 func init() {
 	rootCmd.AddCommand(ETLCmd)
@@ -296,6 +306,7 @@ func init() {
 	ETLCmd.PersistentFlags().StringVar(&flagWUAPIKey, "wu.apikey", "", "")
 
 	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app.interval", 32* time.Second, "0=oneshot")
+	ETLCmd.PersistentFlags().IntVar(&flagAppVerbosity, "app.verbosity", int(log.LvlInfo), "[0..5]")
 
 
 	// Cobra supports local flags which will only run when this command
