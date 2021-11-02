@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	log "github.com/ethereum/go-ethereum/log"
@@ -147,7 +148,12 @@ func run(rc *runConfig) {
 
 			res, err := rc.manWU.requestCurrent(station)
 			if err != nil {
-				interval = time.Hour // If we encounter an error reading from the API, give it an hour. It could be a rate limit thing.
+				if strings.Contains(err.Error(), "request failed") {
+					interval = time.Hour // If we encounter an error reading from the API, give it an hour. It could be a rate limit thing.
+				} else {
+					// We assume that the error was a network/network-unreachable error.
+					// This is not our fault (its the internet's fault); not bad API usage, and we should not bump the interval.
+				}
 				break stationsLoop
 			}
 			for i, obs := range res.Observations {
