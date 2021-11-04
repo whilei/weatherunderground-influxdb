@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,7 +48,6 @@ to quickly create a Cobra application.`,
 		glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(true)))
 		glogger.Verbosity(log.Lvl(flagAppVerbosity))
 		log.Root().SetHandler(glogger)
-
 
 		// Set up a shared instance of this client API.
 		c := influxdb2.NewClient(flagInfluxEndpoint, flagInfluxToken)
@@ -83,15 +83,12 @@ var flagWUAPIKey string
 
 var flagAppInterval time.Duration
 var flagAppVerbosity int
+var flagAppDatadir string
 
 func init() {
 	rootCmd.AddCommand(ETLCmd)
 
 	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	ETLCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	ETLCmd.PersistentFlags().StringVar(&flagInfluxEndpoint, "influx.endpoint", "", "")
 	ETLCmd.PersistentFlags().StringVar(&flagInfluxToken, "influx.token", "", "")
@@ -103,10 +100,7 @@ func init() {
 
 	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app.interval", 32*time.Second, "0=oneshot")
 	ETLCmd.PersistentFlags().IntVar(&flagAppVerbosity, "app.verbosity", int(log.LvlInfo), "[0..5]")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	ETLCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	ETLCmd.PersistentFlags().StringVar(&flagAppDatadir, "app.datadir", filepath.Join(os.Getenv("HOME"), ".wunderground-influxdb"), "Data directory for persistent storage")
 }
 
 type runConfig struct {
@@ -146,7 +140,13 @@ func run(rc *runConfig) {
 		for _, station := range rc.stations {
 			rc.managerInflux.currentStation = station
 
-			res, err := rc.manWU.requestCurrent(station)
+			var res *weatherUndergroundObservations
+			var err error
+			try := 0
+			for ((res == nil) || (err != nil && strings.Contains(err.Error(), "timeout"))) && try < 3 {
+				res, err = rc.manWU.requestCurrent(station)
+				try++
+			}
 			if err != nil {
 				if strings.Contains(err.Error(), "request failed") {
 					interval = time.Hour // If we encounter an error reading from the API, give it an hour. It could be a rate limit thing.
@@ -173,6 +173,38 @@ func run(rc *runConfig) {
 	}
 }
 
+type precipStore struct {
+	Latest     float64 `json:"latest"`
+	Cumulative float64 `json:"cumulative"`
+}
+
+func getMetricPrecipRealTotal(annotation string) *precipStore {
+	os.MkdirAll(flagAppDatadir, os.ModePerm)
+	data, err := ioutil.ReadFile(filepath.Join(flagAppDatadir, annotation+"precipitation"))
+	if err != nil {
+		return nil
+	}
+	v := &precipStore{}
+	err = json.Unmarshal(data, v)
+	if err != nil {
+		return nil
+	}
+	return v
+}
+
+func saveMetricPrecipRealTotal(annotation string, store *precipStore) {
+	os.MkdirAll(flagAppDatadir, os.ModePerm)
+	data, err := json.Marshal(store)
+	if err != nil {
+		log.Error("Failed to marshal JSON precip store", "error", err)
+		return
+	}
+	err = ioutil.WriteFile(filepath.Join(flagAppDatadir, annotation+"precipitation"), data, os.ModePerm)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func (m *managerWU) requestCurrent(station string) (res *weatherUndergroundObservations, err error) {
 	payload := url.Values{}
 	payload.Add("stationId", station)
@@ -185,11 +217,12 @@ func (m *managerWU) requestCurrent(station string) (res *weatherUndergroundObser
 	requestStart := time.Now()
 	response, err := http.Get(endpoint)
 	if err != nil {
-		requestLogger.Error("Request weatherunderground API", "error", err)
+		requestLogger.Error("Request weatherunderground API", "error", err, "elapsed", time.Since(requestStart).Round(time.Millisecond))
 		return nil, err
 	}
 	if response.StatusCode >= 300 || response.StatusCode < 200 {
-		requestLogger.Error("Request weatherunderground bad response", "res.code", response.StatusCode, "res", response.Status)
+		requestLogger.Error("Request weatherunderground bad response", "res.code", response.StatusCode, "res", response.Status,
+			"elapsed", time.Since(requestStart).Round(time.Millisecond))
 		return nil, fmt.Errorf("request failed: %d", response.StatusCode)
 	}
 
@@ -224,6 +257,30 @@ func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[stri
 	if parentAnnotation != "" {
 		parentAnnotation = parentAnnotation + "."
 	}
+
+	precipTotal, ok := myMap["precipTotal"]
+	if ok {
+		precipTotalCurrentValue := precipTotal.(float64)
+		store := getMetricPrecipRealTotal(parentAnnotation)
+		if store == nil {
+			// Initialize store
+			store = &precipStore{
+				Latest:     precipTotalCurrentValue,
+				Cumulative: precipTotalCurrentValue,
+			}
+		} else {
+			if precipTotalCurrentValue < store.Latest {
+				// We have rolled over (eg midnight reset to 0).
+				// Increment Cumulative value by the prior-latest.
+				store.Cumulative += store.Latest
+			}
+		}
+		store.Latest = precipTotalCurrentValue
+		saveMetricPrecipRealTotal(parentAnnotation, store)
+
+		myMap["precipCumulative"] = store.Cumulative + store.Latest
+	}
+
 mapLoop:
 	for k, v := range myMap {
 
@@ -231,6 +288,9 @@ mapLoop:
 		switch t := v.(type) {
 		case map[string]interface{}:
 			m.postMapRecursive(k, t)
+			continue mapLoop
+		case []interface{}:
+			// Unhandled; no data.
 			continue mapLoop
 		}
 
@@ -252,4 +312,3 @@ mapLoop:
 		}
 	}
 }
-
