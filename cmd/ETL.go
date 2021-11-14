@@ -45,10 +45,11 @@ Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(true)))
 		glogger.Verbosity(log.Lvl(flagAppVerbosity))
 		log.Root().SetHandler(glogger)
-
+		
 		// Set up a shared instance of this client API.
 		c := influxdb2.NewClient(flagInfluxEndpoint, flagInfluxToken)
 		api := c.WriteAPIBlocking(flagInfluxOrg, flagInfluxBucket)
@@ -90,17 +91,17 @@ func init() {
 
 	// Here you will define your flags and configuration settings.
 
-	ETLCmd.PersistentFlags().StringVar(&flagInfluxEndpoint, "influx.endpoint", "", "")
-	ETLCmd.PersistentFlags().StringVar(&flagInfluxToken, "influx.token", "", "")
-	ETLCmd.PersistentFlags().StringVar(&flagInfluxOrg, "influx.org", "", "")
-	ETLCmd.PersistentFlags().StringVar(&flagInfluxBucket, "influx.bucket", "weather/autogen", "Use slashed-delim db/retention for v1.8. Otherwise v2.")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxEndpoint, "influx_endpoint", "", "")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxToken, "influx_token", "", "")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxOrg, "influx_org", "", "")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxBucket, "influx_bucket", "weather/autogen", "Use slashed-delim db/retention for v1.8. Otherwise v2.")
 
-	ETLCmd.PersistentFlags().StringSliceVar(&flagWUStations, "wu.stations", nil, "")
-	ETLCmd.PersistentFlags().StringVar(&flagWUAPIKey, "wu.apikey", "", "")
+	ETLCmd.PersistentFlags().StringSliceVar(&flagWUStations, "wu_stations", nil, "")
+	ETLCmd.PersistentFlags().StringVar(&flagWUAPIKey, "wu_apikey", "", "")
 
-	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app.interval", 32*time.Second, "0=oneshot")
-	ETLCmd.PersistentFlags().IntVar(&flagAppVerbosity, "app.verbosity", int(log.LvlInfo), "[0..5]")
-	ETLCmd.PersistentFlags().StringVar(&flagAppDatadir, "app.datadir", filepath.Join(os.Getenv("HOME"), ".wunderground-influxdb"), "Data directory for persistent storage")
+	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app_interval", 32*time.Second, "0=oneshot")
+	ETLCmd.PersistentFlags().IntVar(&flagAppVerbosity, "app_verbosity", int(log.LvlInfo), "[0..5]")
+	ETLCmd.PersistentFlags().StringVar(&flagAppDatadir, "app_datadir", filepath.Join(os.Getenv("HOME"), ".wunderground-influxdb"), "Data directory for persistent storage")
 }
 
 type runConfig struct {
