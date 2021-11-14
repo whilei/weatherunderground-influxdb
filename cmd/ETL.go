@@ -143,7 +143,7 @@ func run(rc *runConfig) {
 			var res *weatherUndergroundObservations
 			var err error
 			try := 0
-			for ((res == nil) || (err != nil && strings.Contains(err.Error(), "timeout"))) && try < 3 {
+			for try < 3 && ((try == 0) || (err != nil && (strings.Contains(err.Error(), "timeout") || strings.Contains(err.Error(), "reset")))) {
 				res, err = rc.manWU.requestCurrent(station)
 				try++
 			}
@@ -215,6 +215,7 @@ func (m *managerWU) requestCurrent(station string) (res *weatherUndergroundObser
 	requestLogger := log.New("HTTP.GET", endpoint)
 
 	requestStart := time.Now()
+	http.DefaultClient.Timeout = time.Second * 30
 	response, err := http.Get(endpoint)
 	if err != nil {
 		requestLogger.Error("Request weatherunderground API", "error", err, "elapsed", time.Since(requestStart).Round(time.Millisecond))
