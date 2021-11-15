@@ -15,4 +15,4 @@ WORKDIR /app
 RUN go build -o wunderground-influxdb .
 
 # Run the server executable
-CMD [ "/app/wunderground-influxdb", "--help" ]
+CMD [ "/app/wunderground-influxdb", "ETL" ]
