@@ -10,12 +10,12 @@
     "Saturday"
   ], 
   "expirationTimeUtc": [
-    1636987896, 
-    1636987896, 
-    1636987896, 
-    1636987896, 
-    1636987896, 
-    1636987896
+    1636998541, 
+    1636998541, 
+    1636998541, 
+    1636998541, 
+    1636998541, 
+    1636998541
   ], 
   "moonPhase": [
     "Waxing Gibbous", 
@@ -28,81 +28,81 @@
   "moonPhaseCode": ["WXG", "WXG", "WXG", "F", "F", "WNG"], 
   "moonPhaseDay": [11, 12, 13, 14, 15, 16], 
   "moonriseTimeLocal": [
-    "2021-11-15T15:06:00-0800", 
-    "2021-11-16T15:22:38-0800", 
-    "2021-11-17T15:40:32-0800", 
-    "2021-11-18T16:00:49-0800", 
-    "2021-11-19T16:25:15-0800", 
-    "2021-11-20T16:56:04-0800"
+    "2021-11-15T15:05:52-0800", 
+    "2021-11-16T15:22:30-0800", 
+    "2021-11-17T15:40:24-0800", 
+    "2021-11-18T16:00:40-0800", 
+    "2021-11-19T16:25:05-0800", 
+    "2021-11-20T16:55:54-0800"
   ], 
   "moonriseTimeUtc": [
-    1637017560, 
-    1637104958, 
-    1637192432, 
-    1637280049, 
-    1637367915, 
-    1637456164
+    1637017552, 
+    1637104950, 
+    1637192424, 
+    1637280040, 
+    1637367905, 
+    1637456154
   ], 
   "moonsetTimeLocal": [
-    "2021-11-15T02:57:14-0800", 
-    "2021-11-16T04:04:35-0800", 
-    "2021-11-17T05:11:55-0800", 
-    "2021-11-18T06:18:52-0800", 
-    "2021-11-19T07:26:34-0800", 
-    "2021-11-20T08:32:03-0800"
+    "2021-11-15T02:57:07-0800", 
+    "2021-11-16T04:04:29-0800", 
+    "2021-11-17T05:11:49-0800", 
+    "2021-11-18T06:18:47-0800", 
+    "2021-11-19T07:26:29-0800", 
+    "2021-11-20T08:31:58-0800"
   ], 
   "moonsetTimeUtc": [
-    1636973834, 
-    1637064275, 
-    1637154715, 
-    1637245132, 
-    1637335594, 
-    1637425923
+    1636973827, 
+    1637064269, 
+    1637154709, 
+    1637245127, 
+    1637335589, 
+    1637425918
   ], 
   "narrative": [
-    "Windy with rain developing in the afternoon. Highs 14 to 16C and lows 0 to 2C.", 
-    "More sun than clouds. Highs 7 to 9C and lows -5 to -3C.", 
+    "Afternoon rain at times, windy. Highs 14 to 16C and lows 0 to 2C.", 
+    "Mostly sunny. Highs 7 to 9C and lows -5 to -3C.", 
     "Times of sun and clouds. Highs 4 to 6C and lows -2 to 0C.", 
-    "Snow showers developing in the afternoon. Highs 3 to 5C and lows -2 to 0C.", 
+    "Snow showers developing in the afternoon. Highs 3 to 5C and lows -2 to 1C.", 
     "Snow showers early. Highs 4 to 6C and lows -1 to 1C.", 
-    "Mostly cloudy. Highs 4 to 6C and lows -3 to -1C."
+    "Cloudy. Highs 4 to 6C and lows -2 to 0C."
   ], 
-  "qpf": [1.01, 0.0, 0.0, 3.97, 0.85, 0.0], 
-  "qpfSnow": [0.0, 0.0, 0.0, 2.5, 0.7, 0.0], 
+  "qpf": [1.32, 0.0, 0.0, 3.61, 0.81, 0.0], 
+  "qpfSnow": [0.0, 0.0, 0.0, 2.2, 0.6, 0.0], 
   "sunriseTimeLocal": [
-    "2021-11-15T07:00:37-0800", 
-    "2021-11-16T07:02:08-0800", 
-    "2021-11-17T07:03:38-0800", 
-    "2021-11-18T07:05:08-0800", 
-    "2021-11-19T07:06:37-0800", 
-    "2021-11-20T07:08:05-0800"
+    "2021-11-15T07:00:32-0800", 
+    "2021-11-16T07:02:03-0800", 
+    "2021-11-17T07:03:33-0800", 
+    "2021-11-18T07:05:03-0800", 
+    "2021-11-19T07:06:32-0800", 
+    "2021-11-20T07:08:00-0800"
   ], 
   "sunriseTimeUtc": [
-    1636988437, 
-    1637074928, 
-    1637161418, 
-    1637247908, 
-    1637334397, 
-    1637420885
+    1636988432, 
+    1637074923, 
+    1637161413, 
+    1637247903, 
+    1637334392, 
+    1637420880
   ], 
   "sunsetTimeLocal": [
-    "2021-11-15T16:15:00-0800", 
-    "2021-11-16T16:13:54-0800", 
-    "2021-11-17T16:12:50-0800", 
-    "2021-11-18T16:11:48-0800", 
-    "2021-11-19T16:10:49-0800", 
-    "2021-11-20T16:09:52-0800"
+    "2021-11-15T16:14:51-0800", 
+    "2021-11-16T16:13:45-0800", 
+    "2021-11-17T16:12:41-0800", 
+    "2021-11-18T16:11:39-0800", 
+    "2021-11-19T16:10:40-0800", 
+    "2021-11-20T16:09:43-0800"
   ], 
   "sunsetTimeUtc": [
-    1637021700, 
-    1637108034, 
-    1637194370, 
-    1637280708, 
-    1637367049, 
-    1637453392
+    1637021691, 
+    1637108025, 
+    1637194361, 
+    1637280699, 
+    1637367040, 
+    1637453383
   ], 
   "temperatureMax": [15, 8, 5, 4, 5, 5], 
-  "temperatureMin": [1, -4, -1, -1, 0, -2], 
+  "temperatureMin": [1, -4, -1, -1, 0, -1], 
   "validTimeLocal": [
     "2021-11-15T07:00:00-0800", 
     "2021-11-16T07:00:00-0800", 
@@ -121,7 +121,7 @@
   ], 
   "daypart": [
     {
-      "cloudCover": [69, 17, 24, 6, 59, 85, 87, 79, 80, 78, 85, 82], 
+      "cloudCover": [64, 17, 23, 6, 59, 88, 86, 79, 80, 79, 85, 82], 
       "dayOrNight": [
         "D", 
         "N", 
@@ -150,10 +150,10 @@
         "Saturday", 
         "Saturday night"
       ], 
-      "iconCode": [12, 29, 34, 31, 30, 26, 14, 14, 14, 27, 26, 26], 
+      "iconCode": [12, 33, 34, 31, 30, 26, 14, 14, 14, 27, 26, 26], 
       "iconCodeExtend": [
         7313, 
-        2900, 
+        3300, 
         3400, 
         3100, 
         3000, 
@@ -166,20 +166,20 @@
         2600
       ], 
       "narrative": [
-        "Becoming windy. Cloudy skies with periods of rain developing this afternoon. High near 15C. Winds SSW at 25 to 40 km/h. Chance of rain 70%.  Winds could occasionally gust over 65 km/h.", 
-        "Some clouds this evening will give way to mainly clear skies overnight. Low 1C. Winds WSW at 15 to 30 km/h.  Winds could occasionally gust over 65 km/h.", 
-        "Generally sunny despite a few afternoon clouds. High 8C. Winds W at 10 to 15 km/h.", 
-        "Clear skies. Low -4C. Winds light and variable.", 
-        "Partly cloudy skies in the morning will give way to cloudy skies during the afternoon. High around 5C. Winds light and variable.", 
-        "Cloudy skies. Low -1C. Winds light and variable.", 
-        "Cloudy. Snow showers developing in the afternoon. High 4C. Winds light and variable. Chance of snow 50%.", 
+        "A mix of clouds and sun this morning then becoming windy with rain developing this afternoon. High around 15C. Winds SSW at 30 to 50 km/h. Chance of rain 60%.  Winds could occasionally gust over 65 km/h.", 
+        "Mainly clear. Low 1C. Winds WSW at 15 to 30 km/h.  Winds could occasionally gust over 65 km/h.", 
+        "Mostly sunny skies. High 8C. Winds W at 10 to 15 km/h.", 
+        "A mostly clear sky. Low -4C. Winds light and variable.", 
+        "Some sun in the morning with increasing clouds during the afternoon. High near 5C. Winds light and variable.", 
+        "Overcast. Low -1C. Winds light and variable.", 
+        "Cloudy with snow showers developing during the afternoon. High 4C. Winds light and variable. Chance of snow 50%.", 
         "Variably cloudy with snow showers. Low -1C. Winds light and variable. Chance of snow 50%. 2-3cm of snow expected.", 
-        "Mainly cloudy with snow showers around in the morning. High around 5C. Winds light and variable. Chance of snow 50%.", 
-        "Considerable cloudiness. Low around 0C. Winds light and variable.", 
+        "Cloudy with snow showers mainly during the morning. High around 5C. Winds light and variable. Chance of snow 50%.", 
+        "Mainly cloudy. Low around 0C. Winds light and variable.", 
         "Cloudy. High near 5C. Winds light and variable.", 
-        "Cloudy. Low -2C. Winds light and variable."
+        "Overcast. Low -1C. Winds light and variable."
       ], 
-      "precipChance": [67, 2, 5, 3, 3, 3, 47, 46, 45, 13, 11, 13], 
+      "precipChance": [63, 4, 6, 3, 3, 3, 46, 46, 45, 13, 11, 14], 
       "precipType": [
         "rain", 
         "precip", 
@@ -194,8 +194,8 @@
         "rain", 
         "precip"
       ], 
-      "qpf": [1.01, 0.0, 0.0, 0.0, 0.0, 0.0, 0.98, 2.99, 0.85, 0.0, 0.0, 0.0], 
-      "qpfSnow": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 2.3, 0.7, 0.0, 0.0, 0.0], 
+      "qpf": [1.32, 0.0, 0.0, 0.0, 0.0, 0.0, 0.65, 2.96, 0.81, 0.0, 0.0, 0.0], 
+      "qpfSnow": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.1, 2.1, 0.6, 0.0, 0.0, 0.0], 
       "qualifierCode": [
         "Q1021", 
         "Q1021", 
@@ -224,11 +224,11 @@
         null, 
         null
       ], 
-      "relativeHumidity": [68, 58, 53, 70, 60, 70, 69, 93, 89, 90, 85, 88], 
+      "relativeHumidity": [63, 59, 54, 71, 61, 73, 70, 93, 89, 91, 84, 88], 
       "snowRange": ["", "", "", "", "", "", "", "2-3", "", "", "", ""], 
-      "temperature": [15, 1, 8, -4, 5, -1, 4, -1, 5, 0, 5, -2], 
-      "temperatureHeatIndex": [14, 9, 8, 2, 5, 0, 4, 2, 4, 2, 5, 2], 
-      "temperatureWindChill": [7, -1, -2, -4, -3, -3, 0, -2, 0, -1, 0, -3], 
+      "temperature": [15, 1, 8, -4, 5, -1, 4, -1, 5, 0, 5, -1], 
+      "temperatureHeatIndex": [15, 9, 8, 2, 4, 0, 4, 2, 5, 3, 5, 2], 
+      "temperatureWindChill": [7, -1, -1, -3, -3, -3, 0, -1, 0, -1, 0, -2], 
       "thunderCategory": [
         "No thunder", 
         "No thunder", 
@@ -259,13 +259,13 @@
         "Low"
       ], 
       "uvIndex": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0], 
-      "windDirection": [201, 243, 276, 344, 80, 38, 88, 40, 126, 173, 163, 106], 
+      "windDirection": [206, 243, 273, 352, 73, 40, 88, 41, 125, 173, 163, 108], 
       "windDirectionCardinal": [
         "SSW", 
         "WSW", 
         "W", 
-        "NNW", 
-        "E", 
+        "N", 
+        "ENE", 
         "NE", 
         "E", 
         "NE", 
@@ -275,7 +275,7 @@
         "ESE"
       ], 
       "windPhrase": [
-        "Winds SSW at 25 to 40 km/h.", 
+        "Winds SSW at 30 to 50 km/h.", 
         "Winds WSW at 15 to 30 km/h.", 
         "Winds W at 10 to 15 km/h.", 
         "Winds light and variable.", 
@@ -288,10 +288,10 @@
         "Winds light and variable.", 
         "Winds light and variable."
       ], 
-      "windSpeed": [32, 27, 15, 8, 7, 8, 6, 6, 7, 7, 9, 6], 
+      "windSpeed": [34, 27, 15, 8, 7, 8, 6, 6, 7, 7, 9, 6], 
       "wxPhraseLong": [
         "PM Rain/Wind", 
-        "Partly Cloudy", 
+        "Mostly Clear", 
         "Mostly Sunny", 
         "Clear", 
         "Partly Cloudy", 
@@ -305,7 +305,7 @@
       ], 
       "wxPhraseShort": [
         "PM Rain/Wind", 
-        "P Cloudy", 
+        "M Clear", 
         "M Sunny", 
         "Clear", 
         "P Cloudy", 

@@ -32,6 +32,7 @@ import (
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	influxdb2_api "github.com/influxdata/influxdb-client-go/v2/api"
 	"github.com/spf13/cobra"
+	"github.com/tidwall/gjson"
 )
 
 // ETLCmd represents the ETL command
@@ -86,6 +87,10 @@ var flagAppInterval time.Duration
 var flagAppVerbosity int
 var flagAppDatadir string
 
+var flagAppForecastEnable bool
+var flagAppForecastGeocode string
+var forecastExpiry time.Time
+
 func init() {
 	rootCmd.AddCommand(ETLCmd)
 
@@ -102,6 +107,9 @@ func init() {
 	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app_interval", 32*time.Second, "0=oneshot")
 	ETLCmd.PersistentFlags().IntVar(&flagAppVerbosity, "app_verbosity", int(log.LvlInfo), "[0..5]")
 	ETLCmd.PersistentFlags().StringVar(&flagAppDatadir, "app_datadir", filepath.Join("/var", "lib", "wunderground-influxdb"), "Data directory for persistent storage")
+
+	ETLCmd.PersistentFlags().BoolVar(&flagAppForecastEnable, "app_forecast", false, "Enable forecasting metrics")
+	ETLCmd.PersistentFlags().StringVar(&flagAppForecastGeocode, "app_forecast_geocode", "48.029,-118.367", "Data directory for persistent storage")
 }
 
 type runConfig struct {
@@ -159,14 +167,39 @@ func run(rc *runConfig) {
 			}
 			for i, obs := range res.Observations {
 				start := time.Now()
-				err := rc.managerInflux.record(obs)
+				err := rc.managerInflux.recordObs(obs)
 				if err != nil {
-					log.Error("Post InfluxDB", "error", err)
+					log.Error("Post InfluxDB observation", "error", err)
 					continue
 				}
 				log.Info("Posted observation to influx", "i", i, "elapsed", time.Since(start).Round(time.Millisecond))
 			}
 		}
+
+		if flagAppForecastEnable {
+			if time.Now().After(forecastExpiry) {
+
+				// Function will set forecastExpiry to the first value given in the forecast data
+				res, err := rc.manWU.requestForecast()
+				if err != nil {
+					log.Error("Forecast request failed", "error", err)
+				} else {
+					// Forecast was received OK.
+					err = rc.managerInflux.recordForecast(res)
+					if err != nil {
+						log.Error("Post InfluxDB forecast", "error", err)
+					} else {
+						// Forecast has been recorded OK.
+						//
+						// Now get the expiry time from the forecast data,
+						// and update our global value.
+						jval := gjson.GetBytes(res, "expirationTimeUtc.0")
+						forecastExpiry = time.Unix(jval.Int(), 0)
+					}
+				}
+			}
+		}
+
 		if rerun {
 			log.Warn("Sleeping", "interval", interval)
 			time.Sleep(interval)
@@ -244,7 +277,41 @@ func (m *managerWU) requestCurrent(station string) (res *weatherUndergroundObser
 	return data, nil
 }
 
-func (m *managerInflux) record(obs interface{}) error {
+func (m *managerWU) requestForecast() (res []byte, err error) {
+	payload := url.Values{}
+	payload.Add("geocode", flagAppForecastGeocode)
+	payload.Add("format", "json")
+	payload.Add("units", "m")
+	payload.Add("language", "en-US")
+	payload.Add("apiKey", m.apiKey)
+	endpoint := "https://api.weather.com/v3/wx/forecast/daily/5day?" + payload.Encode()
+	requestLogger := log.New("HTTP.GET", endpoint)
+
+	requestStart := time.Now()
+	http.DefaultClient.Timeout = time.Second * 30
+	response, err := http.Get(endpoint)
+	if err != nil {
+		requestLogger.Error("Request weatherunderground API", "error", err, "elapsed", time.Since(requestStart).Round(time.Millisecond))
+		return nil, err
+	}
+	if response.StatusCode >= 300 || response.StatusCode < 200 {
+		requestLogger.Error("Request weatherunderground bad response", "res.code", response.StatusCode, "res", response.Status,
+			"elapsed", time.Since(requestStart).Round(time.Millisecond))
+		return nil, fmt.Errorf("request failed: %d", response.StatusCode)
+	}
+
+	// Request has been made OK.
+	requestLogger.Info("OK", "elapsed", time.Since(requestStart).Round(time.Millisecond))
+
+	// Decode the response body.
+	dataBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, err
+	}
+	return dataBytes, nil
+}
+
+func (m *managerInflux) recordObs(obs interface{}) error {
 	obsT, ok := obs.(map[string]interface{})
 	if !ok {
 		return errors.New("failed to cast observation to map")
@@ -313,4 +380,100 @@ mapLoop:
 			log.Debug("Wrote point", "station", m.currentStation, measurement, v)
 		}
 	}
+}
+
+var forecastFields = []string{
+	"calendarDayTemperatureMax",
+	"calendarDayTemperatureMin",
+	"moonPhaseDay",
+	"moonPhase",
+	"narrative",
+	"qpf",
+	"qpfSnow",
+	"temperatureMax",
+	"temperatureMin",
+	"daypart.0.narrative",
+	"daypart.0.cloudCover",
+	"daypart.0.dayOrNight",
+	"daypart.0.daypartName",
+	"daypart.0.precipChance",
+	"daypart.0.precipType",
+	"daypart.0.qpf",
+	"daypart.0.qpfSnow",
+	"daypart.0.qualifierPhrase",
+	"daypart.0.relativeHumidity",
+	"daypart.0.temperature",
+	"daypart.0.temperatureHeatIndex",
+	"daypart.0.temperatureWindChill",
+	"daypart.0.thunderCategory",
+	"daypart.0.thunderIndex",
+	"daypart.0.uvDescription",
+	"daypart.0.uvIndex",
+	"daypart.0.windDirection",
+	"daypart.0.windDirectionCardinal",
+	"daypart.0.windSpeed",
+	"daypart.0.wxPhraseLong",
+}
+
+func (m *managerInflux) recordForecast(forecastData []byte) error {
+	now := time.Now()
+	ctx := context.Background()
+
+	// Assume: this field (daypart.0.narrative) is
+	// the first we'll encounter of the daypart object,
+	// and its first value (.0) will always be null when the response is given at night time,
+	// and it will never be null in the morning.
+	isNight := gjson.GetBytes(forecastData, "daypart.0.narrative.0").Type == gjson.Null
+
+	for _, f := range forecastFields {
+		res := gjson.GetBytes(forecastData, f)
+		log.Debug("JSON", f, res.Value())
+
+		// Create point using fluent style
+		measurementName := fmt.Sprintf("%s/forecast/%s", m.namespace, f)
+		p := influxdb2.NewPointWithMeasurement(measurementName).SetTime(now)
+
+		resSl, ok := res.Value().([]interface{})
+		if !ok {
+			return fmt.Errorf("could not cast field value to slice: %s", f)
+		}
+
+		/*
+		   calendarDayTemperatureMax => [15 8 5 4 5 5]
+		   calendarDayTemperatureMin => [4 -2 -4 -1 -1 0]
+		   moonPhaseDay => [11 12 13 14 15 16]
+		   moonPhase => [Waxing Gibbous Waxing Gibbous Waxing Gibbous Full Moon Full Moon Waning Gibbous]
+		*/
+		for i, it := range resSl {
+			// The first element can be null.
+			// The API will do this when the day part of the daypart has expired;
+			// then, it'll be evening (local time), and only the night part of the daypart (index=1)
+			// will be relevant.
+			// This is a kind of weird API.
+			// So, since we're living in time series database world, setting null values
+			// as the first item in the forecast is useless, and I think will be a PIA
+			// to handle from the InfluxQL side.
+			// So if the first element is null, we're going to pretend like it doesn't exist.
+			// To do this, we need to decrement the index.
+			if isNight && i == 0 {
+				// Always skip the first value which will be 'null' when the forecast is given in the night.
+				continue
+			}
+			fieldIndex := i
+			if isNight {
+				// At night, pretend like they didn't send us null values for the past morning.
+				fieldIndex -= 1
+			}
+			p.AddField(fmt.Sprintf("%d", fieldIndex), it)
+		}
+
+		if err := m.clientAPI.WritePoint(ctx, p); err != nil {
+			log.Error("Write point", "error", err)
+			return err
+		} else {
+			log.Debug("Wrote point", "type", "forecast", measurementName, resSl)
+		}
+	}
+
+	return nil
 }
