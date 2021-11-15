@@ -56,6 +56,8 @@ services:
       - WINFLUX_WU_STATIONS=KWAFRUIT1
       - WINFLUX_WU_APIKEY=${WU_API_KEY}
       - WINFLUX_APP_INTERVAL=5m
+      - WINFLUX_APP_FORECAST=true
+      - WINFLUX_APP_FORECAST_GEOCODE=48.033869303870034,-118.36167307821674
 volumes:
   influxdb-storage:
   chronograf-storage:
