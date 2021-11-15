@@ -92,7 +92,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 
 	ETLCmd.PersistentFlags().StringVar(&flagInfluxEndpoint, "influx_endpoint", "", "")
-	ETLCmd.PersistentFlags().StringVar(&flagInfluxToken, "influx_token", "", "")
+	ETLCmd.PersistentFlags().StringVar(&flagInfluxToken, "influx_token", "", "user:pass for v1.8")
 	ETLCmd.PersistentFlags().StringVar(&flagInfluxOrg, "influx_org", "", "")
 	ETLCmd.PersistentFlags().StringVar(&flagInfluxBucket, "influx_bucket", "weather/autogen", "Use slashed-delim db/retention for v1.8. Otherwise v2.")
 
@@ -101,7 +101,7 @@ func init() {
 
 	ETLCmd.PersistentFlags().DurationVar(&flagAppInterval, "app_interval", 32*time.Second, "0=oneshot")
 	ETLCmd.PersistentFlags().IntVar(&flagAppVerbosity, "app_verbosity", int(log.LvlInfo), "[0..5]")
-	ETLCmd.PersistentFlags().StringVar(&flagAppDatadir, "app_datadir", filepath.Join(os.Getenv("HOME"), ".wunderground-influxdb"), "Data directory for persistent storage")
+	ETLCmd.PersistentFlags().StringVar(&flagAppDatadir, "app_datadir", filepath.Join("/var", "lib", "wunderground-influxdb"), "Data directory for persistent storage")
 }
 
 type runConfig struct {
