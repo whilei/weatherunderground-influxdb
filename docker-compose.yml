@@ -30,7 +30,7 @@ services:
       - INFLUXDB_USERNAME=${INFLUXDB_ADMIN_USERNAME}
       - INFLUXDB_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:8.2.4
     restart: "unless-stopped"
     ports:
       - '3009:3000'
