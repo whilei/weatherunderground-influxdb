@@ -195,6 +195,7 @@ func run(rc *runConfig) {
 						// and update our global value.
 						jval := gjson.GetBytes(res, "expirationTimeUtc.0")
 						forecastExpiry = time.Unix(jval.Int(), 0)
+						log.Info("Forecast expiry reset", "expiry", forecastExpiry.Round(time.Second), "expiry.from_now", forecastExpiry.Sub(time.Now()).Round(time.Second))
 					}
 				}
 			}

@@ -1,6 +1,6 @@
 {
-  "calendarDayTemperatureMax": [8, 5, 3, 5, 4, 5], 
-  "calendarDayTemperatureMin": [-2, -4, -2, -1, -1, -1], 
+  "calendarDayTemperatureMax": [8, 5, 3, 5, 5, 5], 
+  "calendarDayTemperatureMin": [-2, -5, -2, -1, -1, -2], 
   "dayOfWeek": [
     "Tuesday", 
     "Wednesday", 
@@ -10,12 +10,12 @@
     "Sunday"
   ], 
   "expirationTimeUtc": [
-    1637064722, 
-    1637064722, 
-    1637064722, 
-    1637064722, 
-    1637064722, 
-    1637064722
+    1637081798, 
+    1637081798, 
+    1637081798, 
+    1637081798, 
+    1637081798, 
+    1637081798
   ], 
   "moonPhase": [
     "Waxing Gibbous", 
@@ -60,15 +60,15 @@
     1637516094
   ], 
   "narrative": [
-    "Times of sun and clouds. Highs 7 to 9C and lows -5 to -3C.", 
-    "Mix of sun and clouds. Highs 4 to 6C and lows -3 to -1C.", 
-    "Afternoon snow showers. Highs 2 to 4C and lows -2 to 0C.", 
-    "Mix of sun and clouds. Highs 4 to 6C and lows -1 to 1C.", 
-    "More clouds than sun. Highs 3 to 5C and lows -2 to 0C.", 
-    "More clouds than sun. Highs 4 to 6C and lows -1 to 1C."
+    "Partly cloudy. Highs 7 to 9C and lows -6 to -4C.", 
+    "Partly cloudy. Highs 4 to 6C and lows -3 to -1C.", 
+    "An afternoon mix of rain and snow. Highs 2 to 4C and lows -2 to 0C.", 
+    "Mix of sun and clouds. Highs 4 to 6C and lows -2 to 0C.", 
+    "Times of sun and clouds. Highs 4 to 6C and lows -3 to -1C.", 
+    "Mostly cloudy. Highs 4 to 6C and lows -2 to 1C."
   ], 
-  "qpf": [0.0, 0.0, 5.1, 0.0, 0.0, 0.0], 
-  "qpfSnow": [0.0, 0.0, 2.2, 0.0, 0.0, 0.0], 
+  "qpf": [0.0, 0.0, 4.87, 0.0, 0.0, 0.0], 
+  "qpfSnow": [0.0, 0.0, 3.3, 0.0, 0.0, 0.0], 
   "sunriseTimeLocal": [
     "2021-11-16T07:02:06-0800", 
     "2021-11-17T07:03:36-0800", 
@@ -101,8 +101,8 @@
     1637453389, 
     1637539735
   ], 
-  "temperatureMax": [8, 5, 3, 5, 4, 5], 
-  "temperatureMin": [-4, -2, -1, 0, -1, 0], 
+  "temperatureMax": [8, 5, 3, 5, 5, 5], 
+  "temperatureMin": [-5, -2, -1, -1, -2, -1], 
   "validTimeLocal": [
     "2021-11-16T07:00:00-0800", 
     "2021-11-17T07:00:00-0800", 
@@ -121,7 +121,7 @@
   ], 
   "daypart": [
     {
-      "cloudCover": [25, 4, 60, 85, 94, 87, 55, 81, 75, 75, 77, 71], 
+      "cloudCover": [28, 4, 58, 86, 91, 83, 49, 76, 63, 69, 77, 76], 
       "dayOrNight": [
         "D", 
         "N", 
@@ -150,52 +150,52 @@
         "Sunday", 
         "Sunday night"
       ], 
-      "iconCode": [30, 31, 30, 26, 14, 14, 30, 26, 28, 27, 28, 27], 
+      "iconCode": [30, 31, 30, 26, 5, 14, 30, 27, 30, 29, 26, 27], 
       "iconCodeExtend": [
         3000, 
         3100, 
         3000, 
         2600, 
-        7803, 
+        7403, 
         1400, 
         3000, 
-        2600, 
-        2800, 
         2700, 
-        2800, 
+        3000, 
+        2900, 
+        2600, 
         2700
       ], 
       "narrative": [
-        "Sunshine and clouds mixed. High 8C. Winds W at 10 to 15 km/h.", 
-        "Clear skies. Low -4C. Winds light and variable.", 
-        "Partly to mostly cloudy. High around 5C. Winds light and variable.", 
+        "Partly cloudy. High 8C. Winds WNW at 10 to 15 km/h.", 
+        "Clear skies. Low near -5C. Winds light and variable.", 
+        "Some sun in the morning with increasing clouds during the afternoon. High near 5C. Winds light and variable.", 
         "Cloudy. Low -2C. Winds light and variable.", 
-        "Cloudy with snow showers developing during the afternoon. High 3C. Winds light and variable. Chance of snow 60%.", 
-        "Variable clouds with snow showers. Low -1C. Winds light and variable. Chance of snow 70%. Snow accumulations less than 2cm.", 
-        "Partly cloudy skies. High near 5C. Winds light and variable.", 
-        "Cloudy skies. Low around 0C. Winds light and variable.", 
-        "Mostly cloudy. High 4C. Winds light and variable.", 
-        "Considerable cloudiness. Low -1C. Winds light and variable.", 
-        "Considerable cloudiness. High near 5C. Winds light and variable.", 
-        "Mostly cloudy skies. Low near 0C. Winds light and variable."
+        "Cloudy early with periods of light rain and snow later in the day. High 3C. Winds light and variable. Chance of precip 50%.", 
+        "Variable clouds with snow showers. Low -1C. Winds light and variable. Chance of snow 60%. 2-3cm of snow expected.", 
+        "Partly cloudy. High near 5C. Winds light and variable.", 
+        "Partly cloudy during the evening followed by cloudy skies overnight. Low -1C. Winds light and variable.", 
+        "Partly cloudy skies. High around 5C. Winds light and variable.", 
+        "Partly cloudy skies during the evening will give way to cloudy skies overnight. Low -2C. Winds light and variable.", 
+        "Cloudy. High near 5C. Winds light and variable.", 
+        "Mostly cloudy. Low -1C. Winds light and variable."
       ], 
-      "precipChance": [14, 3, 3, 2, 61, 65, 16, 13, 10, 12, 12, 24], 
+      "precipChance": [11, 3, 3, 2, 52, 62, 15, 13, 10, 12, 11, 21], 
       "precipType": [
         "rain", 
         "snow", 
         "rain", 
         "precip", 
-        "snow", 
+        "precip", 
         "snow", 
         "rain", 
         "precip", 
-        "precip", 
+        "rain", 
         "precip", 
         "rain", 
         "precip"
       ], 
-      "qpf": [0.0, 0.0, 0.0, 0.0, 2.2, 2.9, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
-      "qpfSnow": [0.0, 0.0, 0.0, 0.0, 0.6, 1.7, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+      "qpf": [0.0, 0.0, 0.0, 0.0, 2.0, 2.87, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
+      "qpfSnow": [0.0, 0.0, 0.0, 0.0, 0.5, 2.8, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 
       "qualifierCode": [
         null, 
         null, 
@@ -224,11 +224,11 @@
         null, 
         null
       ], 
-      "relativeHumidity": [53, 69, 59, 71, 71, 91, 85, 91, 83, 90, 81, 89], 
-      "snowRange": ["", "", "", "", "", "< 2", "", "", "", "", "", ""], 
-      "temperature": [8, -4, 5, -2, 3, -1, 5, 0, 4, -1, 5, 0], 
-      "temperatureHeatIndex": [8, 2, 4, -1, 3, 2, 5, 1, 4, 1, 4, 2], 
-      "temperatureWindChill": [-1, -4, -4, -4, -1, 0, 0, -1, -1, -3, -3, -2], 
+      "relativeHumidity": [50, 69, 59, 71, 68, 91, 83, 89, 81, 88, 76, 86], 
+      "snowRange": ["", "", "", "", "", "2-3", "", "", "", "", "", ""], 
+      "temperature": [8, -5, 5, -2, 3, -1, 5, -1, 5, -2, 5, -1], 
+      "temperatureHeatIndex": [8, 2, 4, -1, 3, 1, 5, 1, 4, 1, 4, 1], 
+      "temperatureWindChill": [1, -4, -4, -4, 0, -1, 0, -2, -2, -3, -3, -2], 
       "thunderCategory": [
         "No thunder", 
         "No thunder", 
@@ -259,23 +259,23 @@
         "Low"
       ], 
       "uvIndex": [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0], 
-      "windDirection": [267, 352, 69, 38, 79, 40, 145, 158, 170, 83, 117, 80], 
+      "windDirection": [288, 351, 70, 40, 72, 43, 137, 106, 168, 47, 116, 72], 
       "windDirectionCardinal": [
-        "W", 
+        "WNW", 
         "N", 
         "ENE", 
         "NE", 
-        "E", 
+        "ENE", 
         "NE", 
         "SE", 
-        "SSE", 
-        "S", 
-        "E", 
         "ESE", 
-        "E"
+        "SSE", 
+        "NE", 
+        "ESE", 
+        "ENE"
       ], 
       "windPhrase": [
-        "Winds W at 10 to 15 km/h.", 
+        "Winds WNW at 10 to 15 km/h.", 
         "Winds light and variable.", 
         "Winds light and variable.", 
         "Winds light and variable.", 
@@ -288,19 +288,19 @@
         "Winds light and variable.", 
         "Winds light and variable."
       ], 
-      "windSpeed": [14, 8, 7, 8, 5, 5, 8, 6, 9, 7, 8, 8], 
+      "windSpeed": [14, 9, 7, 8, 5, 5, 7, 6, 9, 7, 8, 8], 
       "wxPhraseLong": [
         "Partly Cloudy", 
         "Clear", 
         "Partly Cloudy", 
         "Cloudy", 
-        "PM Snow Showers", 
+        "PM Rain/Snow", 
         "Snow Showers", 
         "Partly Cloudy", 
+        "Mostly Cloudy", 
+        "Partly Cloudy", 
+        "Partly Cloudy", 
         "Cloudy", 
-        "Mostly Cloudy", 
-        "Mostly Cloudy", 
-        "Mostly Cloudy", 
         "Mostly Cloudy"
       ], 
       "wxPhraseShort": [
@@ -308,13 +308,13 @@
         "Clear", 
         "P Cloudy", 
         "Cloudy", 
-        "PM Snw Shwrs", 
+        "PM Rain/Snow", 
         "Snow Showers", 
         "P Cloudy", 
+        "M Cloudy", 
+        "P Cloudy", 
+        "P Cloudy", 
         "Cloudy", 
-        "M Cloudy", 
-        "M Cloudy", 
-        "M Cloudy", 
         "M Cloudy"
       ]
     }
