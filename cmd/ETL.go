@@ -70,7 +70,7 @@ to quickly create a Cobra application.`,
 
 		manIF := &managerInflux{
 			clientAPI: api,
-			namespace: "wu.",
+			namespace: "wu2.",
 		}
 
 		rc := &runConfig{
@@ -330,6 +330,35 @@ func (m *managerInflux) recordObs(obs interface{}) error {
 	return nil
 }
 
+// observationAnnotationsMustFloat are annotations from the API that we know must be floats.
+// If they are not float, it is BAD if they get posted to Influx, so we need
+// to make sure that WU is giving us proper floats and not some "n/a/" or "--" or whatever.
+// I don't care if these values have duplicates in them, and I am too lazy to go through and weed them;
+// I assembled this list by copy-pasting relevant values from the error(s) commented below.
+var observationAnnotationsMustFloat = []string{
+	"windChill",
+	"temp",
+	"heatIndex",
+	"dewpt",
+	"windSpeed",
+	"windGust",
+	"windSpeed",
+	"windGust",
+	"temp",
+	"heatIndex",
+	"dewpt",
+	"windChill",
+	"windSpeed",
+	"temp",
+	"dewpt",
+	"windGust",
+	"heatIndex",
+	"windChill",
+
+	"humidity",
+	"winddir",
+}
+
 func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[string]interface{}) {
 	now := time.Now()
 	ctx := context.Background()
@@ -339,25 +368,29 @@ func (m *managerInflux) postMapRecursive(parentAnnotation string, myMap map[stri
 
 	precipTotal, ok := myMap["precipTotal"]
 	if ok {
-		precipTotalCurrentValue := precipTotal.(float64)
-		store := getMetricPrecipRealTotal(parentAnnotation)
-		if store == nil {
-			// Initialize store
-			store = &precipStore{
-				Latest:     precipTotalCurrentValue,
-				Cumulative: precipTotalCurrentValue,
-			}
+		precipTotalCurrentValue, ok := precipTotal.(float64)
+		if !ok {
+			log.Error("Failed to cast precipTotal to float64", "value", precipTotal)
 		} else {
-			if precipTotalCurrentValue < store.Latest {
-				// We have rolled over (eg midnight reset to 0).
-				// Increment Cumulative value by the prior-latest.
-				store.Cumulative += store.Latest
+			store := getMetricPrecipRealTotal(parentAnnotation)
+			if store == nil {
+				// Initialize store
+				store = &precipStore{
+					Latest:     precipTotalCurrentValue,
+					Cumulative: precipTotalCurrentValue,
+				}
+			} else {
+				if precipTotalCurrentValue < store.Latest {
+					// We have rolled over (eg midnight reset to 0).
+					// Increment Cumulative value by the prior-latest.
+					store.Cumulative += store.Latest
+				}
 			}
-		}
-		store.Latest = precipTotalCurrentValue
-		saveMetricPrecipRealTotal(parentAnnotation, store)
+			store.Latest = precipTotalCurrentValue
+			saveMetricPrecipRealTotal(parentAnnotation, store)
 
-		myMap["precipCumulative"] = store.Cumulative + store.Latest
+			myMap["precipCumulative"] = store.Cumulative + store.Latest
+		}
 	}
 
 mapLoop:
@@ -376,6 +409,21 @@ mapLoop:
 		measurement := fmt.Sprintf("%s%s%s.gauge", m.namespace, parentAnnotation, k)
 		fields := map[string]interface{}{
 			"value": v,
+		}
+
+		// Special handling for annotations that must be floats.
+		for _, annotation := range observationAnnotationsMustFloat {
+			if strings.Contains(measurement, annotation) {
+				fields["value"], ok = v.(float64)
+				if !ok {
+					log.Error("Failed to cast value to float64", "measurement", measurement, "value", v)
+					continue mapLoop
+				}
+
+				// We found an annotation that must be a float;
+				// so we can skip the reset of the cross-reference annotation lookup cases.
+				break
+			}
 		}
 
 		tags := map[string]string{
@@ -420,8 +468,8 @@ mapLoop:
 			*/
 			// It seems Influx does not want to change field data types; it will be very, very hard.
 			// So I'm going to try catching the error and posting as a string instead.
-			if strings.Contains("field type conflict", err.Error()) &&
-				strings.Contains("already exists as type string", err.Error()) {
+			if strings.Contains(err.Error(), "field type conflict") &&
+				strings.Contains(err.Error(), "already exists as type string") {
 
 				switch v.(type) {
 				case float64:
