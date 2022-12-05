@@ -13,6 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */
+
+/*
+A brief history of bugs.
+
+20221205
+etler_1       | ERROR[12-05|21:45:48.300] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.winddir.gauge\" is type float, already exists as type string dropped=1"
+
+*/
+
 package cmd
 
 import (
@@ -50,7 +59,7 @@ to quickly create a Cobra application.`,
 		glogger := log.NewGlogHandler(log.StreamHandler(os.Stderr, log.TerminalFormat(true)))
 		glogger.Verbosity(log.Lvl(flagAppVerbosity))
 		log.Root().SetHandler(glogger)
-		
+
 		// Set up a shared instance of this client API.
 		c := influxdb2.NewClient(flagInfluxEndpoint, flagInfluxToken)
 		api := c.WriteAPIBlocking(flagInfluxOrg, flagInfluxBucket)
@@ -377,6 +386,56 @@ mapLoop:
 
 		if err := m.clientAPI.WritePoint(ctx, pt); err != nil {
 			log.Error("Write point", "error", err)
+
+			// 20221205: Fixing a bug.
+			// Getting these from out of nowwhere:
+			/*
+				etler_1       | ERROR[12-05|21:40:48.118] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windChill.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:40:48.123] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.winddir.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:40:48.127] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.humidity.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.300] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.winddir.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.302] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.humidity.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.312] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.temp.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.313] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.heatIndex.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.318] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.dewpt.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.319] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windChill.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.321] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windSpeed.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:45:48.322] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windGust.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.478] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.winddir.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.479] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.humidity.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.484] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windSpeed.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.485] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windGust.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.489] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.temp.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.491] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.heatIndex.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.492] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.dewpt.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:50:48.493] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windChill.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.782] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windSpeed.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.788] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.temp.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.789] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.dewpt.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.790] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windGust.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.795] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.heatIndex.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.796] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.metric.windChill.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.806] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.winddir.gauge\" is type float, already exists as type string dropped=1"
+				etler_1       | ERROR[12-05|21:55:48.814] Write point                              error="400 Bad Request: partial write: field type conflict: input field \"value\" on measurement \"wu.humidity.gauge\" is type float, already exists as type string dropped=1"
+			*/
+			// It seems Influx does not want to change field data types; it will be very, very hard.
+			// So I'm going to try catching the error and posting as a string instead.
+			if strings.Contains("field type conflict", err.Error()) &&
+				strings.Contains("already exists as type string", err.Error()) {
+
+				switch v.(type) {
+				case float64:
+					fields["value"] = fmt.Sprintf("%v", v)
+				}
+
+				// Try again, this time with a stringy value.
+				pt = influxdb2.NewPoint(measurement, tags, fields, now)
+				if err := m.clientAPI.WritePoint(ctx, pt); err != nil {
+					log.Error("Write point again", "error", err)
+				} else {
+					log.Info("Wrote point (second try)", "station", m.currentStation, measurement, v)
+				}
+			}
 		} else {
 			log.Debug("Wrote point", "station", m.currentStation, measurement, v)
 		}
